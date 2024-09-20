@@ -1,0 +1,822 @@
+import { PrismaClient } from '@prisma/client';
+// import { NextApiRequest, NextApiResponse } from 'next';
+const prisma = new PrismaClient();
+
+
+export default class prismaInteraction {
+
+
+
+    // Получение всех заказов
+    async getOrders() {
+        try {
+            const orders = await prisma.order.findMany({
+                include: {
+                    workStatuses: true // Включаем связь со статусами участков
+                }
+            });
+            return orders;
+        } catch (error) {
+            console.error('Ошибка при получении данных:', error);
+        } finally {
+            await prisma.$disconnect();
+        }
+    }
+
+    // Метод для обновления заказа 
+    async updateOrder(id: number, orders: any, workStatuses: any) {
+        try {
+            // Найти соответствующий участок по названию
+            const order = await prisma.order.findFirst({
+                where: { id: id },
+            });
+            if (order) {
+                // Если запись есть, обновляем ее
+                await prisma.order.update({
+                    where: { id: id },
+                    data: {
+                        launchNumber: orders.launchNumber,
+                        orderName: orders.orderName,
+                        article: orders.article,
+                        receivedDate: orders.receivedDate,
+                        status: orders.status,
+                        isCompleted: orders.isCompleted,
+                        completionRate: orders.completionRate,
+                        nomenclature: orders.nomenclature,
+                        quantity: orders.quantity,
+                        pdDate: orders.pdDate,
+                    },
+                });
+            } else {
+                throw new Error('Заказ не найден');
+            }
+            const workStatus = await prisma.orderWorkstationStatus.findFirst({
+                where: {
+                    orderId: id,
+                },
+            });
+            if (workStatus) {
+                // Если запись есть, обновляем ее
+                await prisma.orderWorkstationStatus.update({
+                    where: { id: workStatus.id },
+                    data: {
+                        raskroi: workStatuses.raskroi,
+                        nesting: workStatuses.nesting,
+                        zerkala: workStatuses.zerkala,
+                        kromka: workStatuses.kromka,
+                        prisadka: workStatuses.prisadka,
+                        pokraska: workStatuses.pokraska,
+                        furnitura: workStatuses.furnitura,
+                        metall: workStatuses.metall,
+                        setki: workStatuses.setki,
+                        konveer: workStatuses.konveer,
+                        sborka: workStatuses.sborka,
+                    },
+                });
+            } else {
+                throw new Error('Заказ не найден');
+            }
+            const allWorkstations = await prisma.workstation.findMany();
+            const tasks = [];
+
+            // Функция для обработки добавления или удаления заданий
+            const handleTaskUpdate = async (workstationName: string, isActive: boolean, pd: Date) => {
+                const workstation = allWorkstations.find(ws => ws.name === workstationName);
+
+                if (!workstation) return;
+
+                const existingTask = await prisma.workstationTask.findFirst({
+                    where: {
+                        orderId: id,
+                        workstationId: workstation.id,
+                    },
+                });
+
+                if (isActive && !existingTask) {
+                    // Если участок активен, но задания нет, создаем его
+                    tasks.push({
+                        orderId: id,
+                        workstationId: workstation.id,
+                        ostatok: orders.quantity,
+                        ostatokInpt: orders.quantity,
+                        completedAll: 0,
+                        completedPros: 0,
+                        completedTask: false,
+                        pd: formatDate(pd), // Преобразуем дату в ISO-формат
+                    });
+                } else if (!isActive && existingTask) {
+                    // Если участок неактивен, а задание существует, удаляем его
+                    await prisma.workstationTask.delete({
+                        where: { id: existingTask.id },
+                    });
+                }
+            };
+            // Функция для разбора даты из строки формата DD.MM.YYYY
+            const parseDate = (dateString: string) => {
+                const parts = dateString.split('.');
+                return new Date(
+                    parseInt(parts[2], 10), // Год
+                    parseInt(parts[1], 10) - 1, // Месяц (0-11)
+                    parseInt(parts[0], 10) // День
+                );
+            };
+
+            // Функция для форматирования даты в формат DD.MM.YYYY
+            const formatDate = (date: Date) => {
+                const day = String(date.getDate()).padStart(2, '0'); // День с ведущим нулем
+                const month = String(date.getMonth() + 1).padStart(2, '0'); // Месяц с ведущим нулем
+                const year = date.getFullYear(); // Год
+                return `${day}.${month}.${year}`;
+            };
+
+            // Преобразуем строки дат в объекты Date
+            const receivedDate = parseDate(orders.receivedDate);
+            const pdDate = parseDate(orders.pdDate);
+
+            // Рассчитываем pd для каждого участка с учетом смещений
+            const pdKromka = new Date(receivedDate);
+            pdKromka.setDate(pdKromka.getDate() + 1); // Смещение на 1 день
+
+            const pdPrisadka = new Date(pdKromka);
+            pdPrisadka.setDate(pdPrisadka.getDate() + 1); // Смещение на 1 день после кромки
+
+            const pdPokraska = new Date(pdDate);
+            pdPokraska.setDate(pdPokraska.getDate() - 7); // Смещение за 7 дней до общей PD
+
+            const pdFurnitura = new Date(pdDate);
+            pdFurnitura.setDate(pdFurnitura.getDate() - 4); // Смещение за 4 дня до PD
+
+            const pdKonveerSborka = new Date(pdDate);
+            pdKonveerSborka.setDate(pdKonveerSborka.getDate() - 3); // Смещение за 3 дня до PD
+
+            // Обрабатываем задания для каждого участка
+            await handleTaskUpdate('Раскрой', workStatuses.raskroi, receivedDate);
+            await handleTaskUpdate('Нестинг', workStatuses.nesting, receivedDate);
+            await handleTaskUpdate('Зеркала', workStatuses.zerkala, receivedDate);
+            await handleTaskUpdate('Кромка', workStatuses.kromka, pdKromka);
+            await handleTaskUpdate('Присадка', workStatuses.prisadka, pdPrisadka);
+            await handleTaskUpdate('Покраска', workStatuses.pokraska, pdPokraska);
+            await handleTaskUpdate('Фурнитура', workStatuses.furnitura, pdFurnitura);
+            await handleTaskUpdate('Конвеер', workStatuses.konveer, pdKonveerSborka);
+            await handleTaskUpdate('Сборка', workStatuses.sborka, pdKonveerSborka);
+
+            // Если есть задания, создаем их
+            if (tasks.length > 0) {
+                await prisma.workstationTask.createMany({ data: tasks });
+            }
+
+            return order;
+        } catch (error) {
+            console.error('Ошибка при обновлении данных:', error);
+            throw error;
+        } finally {
+            await prisma.$disconnect();
+        }
+    }
+
+
+    // Добавление нового заказа
+    async createOrder(data: {
+        launchNumber: string,
+        orderName: string,
+        article: string,
+        receivedDate: string,
+        status: string,
+        isCompleted: boolean,
+        completionRate: number,
+        nomenclature: string,
+        quantity: number,
+        pdDate: string,
+        raskroi: boolean;
+        nesting: boolean;
+        zerkala: boolean;
+        kromka: boolean;
+        prisadka: boolean;
+        pokraska: boolean;
+        furnitura: boolean;
+        metall: boolean;
+        setki: boolean;
+        konveer: boolean;
+        sborka: boolean;
+    }) {
+        try {
+            // Функция для разбора даты из строки формата DD.MM.YYYY
+            const parseDate = (dateString: string) => {
+                const parts = dateString.split('.');
+                return new Date(
+                    parseInt(parts[2], 10), // Год
+                    parseInt(parts[1], 10) - 1, // Месяц (0-11)
+                    parseInt(parts[0], 10) // День
+                );
+            };
+
+            // Функция для форматирования даты в формат DD.MM.YYYY
+            const formatDate = (date: Date) => {
+                const day = String(date.getDate()).padStart(2, '0'); // День с ведущим нулем
+                const month = String(date.getMonth() + 1).padStart(2, '0'); // Месяц с ведущим нулем
+                const year = date.getFullYear(); // Год
+                return `${day}.${month}.${year}`;
+            };
+
+            // Преобразуем строки дат в объекты Date
+            const receivedDate = parseDate(data.receivedDate);
+            const pdDate = parseDate(data.pdDate);
+
+            // Рассчитываем pd для каждого участка с учетом смещений
+            const pdKromka = new Date(receivedDate);
+            pdKromka.setDate(pdKromka.getDate() + 1); // Смещение на 1 день
+
+            const pdPrisadka = new Date(pdKromka);
+            pdPrisadka.setDate(pdPrisadka.getDate() + 1); // Смещение на 1 день после кромки
+
+            const pdPokraska = new Date(pdDate);
+            pdPokraska.setDate(pdPokraska.getDate() - 7); // Смещение за 7 дней до общей PD
+
+            const pdFurnitura = new Date(pdDate);
+            pdFurnitura.setDate(pdFurnitura.getDate() - 4); // Смещение за 4 дня до PD
+
+            const pdKonveerSborka = new Date(pdDate);
+            pdKonveerSborka.setDate(pdKonveerSborka.getDate() - 3); // Смещение за 3 дня до PD
+
+            console.log(formatDate(pdKromka) + ' кромка');
+            console.log(formatDate(pdPrisadka) + ' присадка');
+            console.log(formatDate(pdPokraska) + ' покраска');
+            console.log(formatDate(pdFurnitura) + ' фурнитура');
+
+            const newOrder = await prisma.order.create({
+                data: {
+                    launchNumber: data.launchNumber,
+                    orderName: data.orderName,
+                    article: data.article,
+                    receivedDate: formatDate(receivedDate), // Форматируем дату
+                    status: data.status,
+                    isCompleted: data.isCompleted,
+                    completionRate: data.completionRate,
+                    nomenclature: data.nomenclature,
+                    quantity: data.quantity,
+                    pdDate: formatDate(pdDate), // Форматируем дату PD
+                    workStatuses: {
+                        create: {
+                            raskroi: data.raskroi,
+                            nesting: data.nesting,
+                            zerkala: data.zerkala,
+                            kromka: data.kromka,
+                            prisadka: data.prisadka,
+                            pokraska: data.pokraska,
+                            furnitura: data.furnitura,
+                            metall: data.metall,
+                            setki: data.setki,
+                            konveer: data.konveer,
+                            sborka: data.sborka,
+                        }
+                    }
+                },
+                include: {
+                    workStatuses: true,
+                },
+            });
+
+            const allWorkstations = await prisma.workstation.findMany();
+            const tasks = [];
+
+            const addTask = (workstationName: string, pd: Date) => {
+                const workstation = allWorkstations.find(ws => ws.name === workstationName);
+                if (workstation) {
+                    tasks.push({
+                        orderId: newOrder.id,
+                        workstationId: workstation.id,
+                        ostatok: data.quantity,
+                        ostatokInpt: data.quantity,
+                        completedAll: 0,
+                        completedPros: 0,
+                        completedTask: false,
+                        pd: formatDate(pd) // Используем формат DD.MM.YYYY для сохранения
+                    });
+                }
+            };
+
+            // Создаем задания для каждого участка с учетом рассчитанного pd
+            if (data.raskroi) addTask('Раскрой', receivedDate);
+            if (data.nesting) addTask('Нестинг', receivedDate);
+            if (data.zerkala) addTask('Зеркала', receivedDate);
+            if (data.kromka) addTask('Кромка', pdKromka);
+            if (data.prisadka) addTask('Присадка', pdPrisadka);
+            if (data.pokraska) addTask('Покраска', pdPokraska);
+            if (data.furnitura) addTask('Фурнитура', pdFurnitura);
+            if (data.konveer) addTask('Конвеер', pdKonveerSborka);
+            if (data.sborka) addTask('Сборка', pdKonveerSborka);
+
+            await prisma.workstationTask.createMany({
+                data: tasks,
+            });
+
+            return newOrder;
+        } catch (error) {
+            console.error('Ошибка при добавлении нового заказа:', error);
+        } finally {
+            await prisma.$disconnect();
+        }
+    }
+
+
+    async getOrdersWorkplace(work: string) {
+        const workstationField = {
+            'Раскрой': 'raskroi',
+            'Нестинг': 'nesting',
+            'Зеркала': 'zerkala',
+            'Кромка': 'kromka',
+            'Присадка': 'prisadka',
+            'Покраска': 'pokraska',
+            'Фурнитура': 'furnitura',
+            'Конвеер': 'konveer',
+            'Сборка': 'sborka'
+        }[work];
+
+        if (workstationField) {
+            try {
+                const orders = await prisma.order.findMany({
+                    where: {
+                        workStatuses: {
+                            some: { [workstationField]: true }
+                        }
+                    },
+                    include: {
+                        workStatuses: true,
+                        tasks: {
+                            where: {
+                                workstation: {
+                                    name: work // Фильтруем задачи по названию участка
+                                }
+                            },
+                            include: {
+                                workstation: true, // Включаем данные по участку
+                                workDone: work !== 'Покраска' ? true : undefined, // Включаем workDone, если не "Покраска"
+                                workDonePokraska: work === 'Покраска' ? true : undefined // Включаем workDonePokraska, если "Покраска"
+                            }
+                        }
+                    }
+                });
+
+                // Текущая дата
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Убираем время для сравнения по дате
+
+                // Обрабатываем заказы
+                const updatedOrders = await Promise.all(orders.map(async (order) => {
+                    const tasks = order.tasks.map(async (task) => {
+                        let previousWorkDoneRecords;
+
+                        // Разделяем логику для запроса к workDone и workDonePokraska
+                        if (work === 'Покраска') {
+                            previousWorkDoneRecords = await prisma.workDonePokraska.findMany({
+                                where: {
+                                    workstationTaskId: task.id,
+                                    dateWork: {
+                                        lt: today, // Только даты до сегодняшнего дня
+                                    },
+                                },
+                            });
+                            // Подсчитываем общее количество выполненной работы за предыдущие дни
+                            const totalPreviousWorkDone = previousWorkDoneRecords.reduce((sum, work) => sum + work.enamel, 0);
+
+                            // Рассчитываем остаток для ввода (ostatokInpt)
+                            const ostatokInpt = order.quantity - totalPreviousWorkDone;
+
+                            // Обновляем поле ostatokInpt в базе данных
+                            await prisma.workstationTask.update({
+                                where: { id: task.id },
+                                data: {
+                                    ostatokInpt: ostatokInpt, // Обновляем значение ostatokInpt
+                                }
+                            });
+
+                            return {
+                                ...task,
+                                ostatokInpt, // Добавляем значение в ответ
+                            };
+                        } else {
+                            previousWorkDoneRecords = await prisma.workDone.findMany({
+                                where: {
+                                    taskId: task.id,
+                                    date: {
+                                        lt: today, // Только даты до сегодняшнего дня
+                                    },
+                                },
+                            });
+                            // Подсчитываем общее количество выполненной работы за предыдущие дни
+                            const totalPreviousWorkDone = previousWorkDoneRecords.reduce((sum, work) => sum + work.quantity, 0);
+
+                            // Рассчитываем остаток для ввода (ostatokInpt)
+                            const ostatokInpt = order.quantity - totalPreviousWorkDone;
+
+                            // Обновляем поле ostatokInpt в базе данных
+                            await prisma.workstationTask.update({
+                                where: { id: task.id },
+                                data: {
+                                    ostatokInpt: ostatokInpt, // Обновляем значение ostatokInpt
+                                }
+                            });
+
+                            return {
+                                ...task,
+                                ostatokInpt, // Добавляем значение в ответ
+                            };
+                        }
+
+
+
+                    });
+
+                    return {
+                        ...order,
+                        tasks: await Promise.all(tasks) // Обновляем задачи с рассчитанным ostatokInpt
+                    };
+                }));
+
+                return updatedOrders;
+            } catch (error) {
+                console.error('Ошибка при получении данных:', error);
+            } finally {
+                await prisma.$disconnect();
+            }
+        }
+    }
+
+
+
+
+
+
+    async updateWorkDone(orderId: number, workstationName: string, doneToday: any) {
+        console.log(doneToday);
+
+        try {
+            // Найти соответствующий участок по названию
+            const workstation = await prisma.workstation.findFirst({
+                where: { name: workstationName },
+            });
+
+            if (!workstation) {
+                throw new Error('Участок не найден');
+            }
+
+            // Найти задание по участку и заказу
+            let task = await prisma.workstationTask.findFirst({
+                where: {
+                    orderId: orderId,
+                    workstationId: workstation.id,
+                },
+            });
+
+            // Если задания нет, создаем его
+            if (!task) {
+                task = await prisma.workstationTask.create({
+                    data: {
+                        orderId: orderId,
+                        workstationId: workstation.id,
+                    },
+                });
+            }
+
+            // Проверка, существует ли запись работы на сегодняшний день
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Убираем время, чтобы сравнивать только дату
+
+            let totalPreviousWorkDone = 0;
+            let totalWorkDone = 0;
+            let ostatokInpt = 0;
+            let ostatok = 0;
+
+            if (workstationName === 'Покраска') {
+                // Логика для участка "Покраска"
+
+                if (doneToday.shlif1Fakt) {
+                    const workDonePokraska = await prisma.workDonePokraska.findFirst({
+                        where: {
+                            workstationTaskId: task.id,
+                            dateWork: today,
+                        },
+                    });
+                    if (workDonePokraska) {
+                        // Если запись есть, обновляем ее
+                        await prisma.workDonePokraska.update({
+                            where: { id: workDonePokraska.id },
+                            data: { grinding1Fakt: doneToday.shlif1Fakt, dateWork: today },
+                        });
+                    } else {
+                        // Иначе создаем новую запись
+                        await prisma.workDonePokraska.create({
+                            data: {
+                                workstationTaskId: task.id,
+                                grinding1Fakt: doneToday.shlif1Fakt,
+                                dateWork: today,
+                            },
+                        });
+                    }
+                }
+                if (doneToday.grunt1Fakt) {
+                    const workDonePokraska = await prisma.workDonePokraska.findFirst({
+                        where: {
+                            workstationTaskId: task.id,
+                            dateWork: today,
+                        },
+                    });
+                    if (workDonePokraska) {
+                        // Если запись есть, обновляем ее
+                        await prisma.workDonePokraska.update({
+                            where: { id: workDonePokraska.id },
+                            data: { ground1Fakt: doneToday.grunt1Fakt, dateWork: today },
+                        });
+                    } else {
+                        // Иначе создаем новую запись
+                        await prisma.workDonePokraska.create({
+                            data: {
+                                workstationTaskId: task.id,
+                                ground1Fakt: doneToday.grunt1Fakt,
+                                dateWork: today,
+                            },
+                        });
+                    }
+                }
+                if (doneToday.shlif2Fakt) {
+                    const workDonePokraska = await prisma.workDonePokraska.findFirst({
+                        where: {
+                            workstationTaskId: task.id,
+                            dateWork: today,
+                        },
+                    });
+                    if (workDonePokraska) {
+                        // Если запись есть, обновляем ее
+                        await prisma.workDonePokraska.update({
+                            where: { id: workDonePokraska.id },
+                            data: { grinding2Fakt: doneToday.shlif2Fakt, dateWork: today },
+                        });
+                    } else {
+                        // Иначе создаем новую запись
+                        await prisma.workDonePokraska.create({
+                            data: {
+                                workstationTaskId: task.id,
+                                grinding2Fakt: doneToday.shlif2Fakt,
+                                dateWork: today,
+                            },
+                        });
+                    }
+                }
+                if (doneToday.grunt2Fakt) {
+                    const workDonePokraska = await prisma.workDonePokraska.findFirst({
+                        where: {
+                            workstationTaskId: task.id,
+                            dateWork: today,
+                        },
+                    });
+                    if (workDonePokraska) {
+                        // Если запись есть, обновляем ее
+                        await prisma.workDonePokraska.update({
+                            where: { id: workDonePokraska.id },
+                            data: { ground2Fakt: doneToday.grunt2Fakt, dateWork: today },
+                        });
+                    } else {
+                        // Иначе создаем новую запись
+                        await prisma.workDonePokraska.create({
+                            data: {
+                                workstationTaskId: task.id,
+                                ground2Fakt: doneToday.grunt2Fakt,
+                                dateWork: today,
+                            },
+                        });
+                    }
+                }
+                if (doneToday.shlif3Fakt) {
+                    const workDonePokraska = await prisma.workDonePokraska.findFirst({
+                        where: {
+                            workstationTaskId: task.id,
+                            dateWork: today,
+                        },
+                    });
+                    if (workDonePokraska) {
+                        // Если запись есть, обновляем ее
+                        await prisma.workDonePokraska.update({
+                            where: { id: workDonePokraska.id },
+                            data: { grinding3Fakt: doneToday.shlif3Fakt, dateWork: today },
+                        });
+                    } else {
+                        // Иначе создаем новую запись
+                        await prisma.workDonePokraska.create({
+                            data: {
+                                workstationTaskId: task.id,
+                                grinding3Fakt: doneToday.shlif3Fakt,
+                                dateWork: today,
+                            },
+                        });
+                    }
+                }
+                if (doneToday.grunt3Fakt) {
+                    const workDonePokraska = await prisma.workDonePokraska.findFirst({
+                        where: {
+                            workstationTaskId: task.id,
+                            dateWork: today,
+                        },
+                    });
+                    if (workDonePokraska) {
+                        // Если запись есть, обновляем ее
+                        await prisma.workDonePokraska.update({
+                            where: { id: workDonePokraska.id },
+                            data: { ground3Fakt: doneToday.grunt3Fakt, dateWork: today },
+                        });
+                    } else {
+                        // Иначе создаем новую запись
+                        await prisma.workDonePokraska.create({
+                            data: {
+                                workstationTaskId: task.id,
+                                ground3Fakt: doneToday.grunt3Fakt,
+                                dateWork: today,
+                            },
+                        });
+                    }
+                }
+                if (doneToday.emalFakt) {
+                    const workDonePokraska = await prisma.workDonePokraska.findFirst({
+                        where: {
+                            workstationTaskId: task.id,
+                            dateWork: today,
+                        },
+                    });
+                    if (workDonePokraska) {
+                        // Если запись есть, обновляем ее
+                        await prisma.workDonePokraska.update({
+                            where: { id: workDonePokraska.id },
+                            data: { enamel: doneToday.emalFakt, dateWork: today },
+                        });
+                    } else {
+                        // Иначе создаем новую запись
+                        await prisma.workDonePokraska.create({
+                            data: {
+                                workstationTaskId: task.id,
+                                enamel: doneToday.emalFakt,
+                                dateWork: today,
+                            },
+                        });
+                    }
+                }
+
+
+
+                // Выбираем записи выполненной работы до сегодняшнего дня
+                const previousWorkDoneRecords = await prisma.workDonePokraska.findMany({
+                    where: {
+                        workstationTaskId: task.id,
+                        dateWork: {
+                            lt: today, // Только даты до сегодняшнего дня
+                        },
+                    },
+                });
+
+                // Подсчитываем общее количество выполненной работы за предыдущие дни
+                totalPreviousWorkDone = previousWorkDoneRecords.reduce((sum, work) => sum + (work.enamel || 0), 0);
+            } else {
+                // Логика для всех остальных участков
+                const workDone = await prisma.workDone.findFirst({
+                    where: {
+                        taskId: task.id,
+                        date: today,
+                    },
+                });
+
+                if (workDone) {
+                    // Если запись есть, обновляем ее
+                    await prisma.workDone.update({
+                        where: { id: workDone.id },
+                        data: { quantity: doneToday },
+                    });
+                } else {
+                    // Иначе создаем новую запись
+                    await prisma.workDone.create({
+                        data: {
+                            taskId: task.id,
+                            quantity: doneToday,
+                            date: today,
+                        },
+                    });
+                }
+
+                // Выбираем записи выполненной работы до сегодняшнего дня
+                const previousWorkDoneRecords = await prisma.workDone.findMany({
+                    where: {
+                        taskId: task.id,
+                        date: {
+                            lt: today, // Только даты до сегодняшнего дня
+                        },
+                    },
+                });
+
+                // Подсчитываем общее количество выполненной работы за предыдущие дни
+                totalPreviousWorkDone = previousWorkDoneRecords.reduce((sum, work) => sum + work.quantity, 0);
+            }
+
+            // Получаем заказ
+            let order = await prisma.order.findFirst({
+                where: { id: orderId },
+            });
+
+            // Рассчитываем остаток для ввода, основанный на работе за предыдущие дни (ostatokInpt)
+            ostatokInpt = order.quantity - totalPreviousWorkDone;
+
+            // Подсчитываем общее количество выполненной работы
+            const workDoneRecords = workstationName === 'Покраска'
+                ? await prisma.workDonePokraska.findMany({
+                    where: { workstationTaskId: task.id },
+                })
+                : await prisma.workDone.findMany({
+                    where: { taskId: task.id },
+                });
+
+            totalWorkDone = workDoneRecords.reduce((sum, work) => sum + (work.enamel || work.quantity || 0), 0);
+            ostatok = order.quantity - totalWorkDone;
+
+            // Пересчитываем процент выполнения
+            const completionRate = (totalWorkDone / order.quantity) * 100;
+
+            // Определяем, завершена ли задача
+            const completedTask = completionRate >= 100;
+
+            // Обновляем задание с новым процентом выполнения и статусом завершения
+            const updatedTask = await prisma.workstationTask.update({
+                where: { id: task.id },
+                data: {
+                    completedAll: totalWorkDone, // Обновляем общее количество выполненных задач
+                    completedPros: completionRate, // Сохраняем новый процент выполнения
+                    ostatok: ostatok, // Обновляем остаток
+                    ostatokInpt: ostatokInpt, // Обновляем остаток для ввода
+                    completedTask: completedTask, // Отмечаем задание как завершенное, если процент выполнения 100
+                },
+            });
+
+            return updatedTask;
+        } catch (error) {
+            console.error('Ошибка при обновлении данных:', error);
+            throw error;
+        } finally {
+            await prisma.$disconnect();
+        }
+    }
+
+
+
+
+    // Получение всех заказов с заданиями для каждого участка
+    async getStatistics() {
+        try {
+            const orders = await prisma.order.findMany({
+                include: {
+                    workStatuses: true, // Включаем связь со статусами участков
+                    tasks: {
+                        include: {
+                            workstation: true, // Включаем связь со станками
+                        },
+                    },
+                },
+            });
+            return orders;
+        } catch (error) {
+            console.error('Ошибка при получении данных:', error);
+        } finally {
+            await prisma.$disconnect();
+        }
+    }
+    
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // =============================================
+// async getOrders() {
+//     try {
+//       const orders = await prisma.order.findMany({
+//         include: {
+//           sections: { // Включаем связанные данные из SectionOrder
+//             include: {
+//               section: true, // Включаем информацию об участках (Section)
+//             //   tasks: true,   // Включаем связанные задания (Task)
+//             },
+//           },
+//         },
+//       });
+//       return orders;
+//     } catch (error) {
+//       console.error('Ошибка при получении данных:', error);
+//     } finally {
+//       await prisma.$disconnect();
+//     }
+//   }

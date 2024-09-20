@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Модель Заказов
+model Order {
+  id             Int      @id @default(autoincrement()) // Первичный ключ
+  launchNumber   String? // Номер запуска
+  orderName      String? // Заказ
+  article        String? // Артикул
+  receivedDate   String? // Дата поступления
+  status         String? // Статус
+  isCompleted    Boolean? // Завершен (булевое)
+  completionRate Float? // Выполнено % (число)
+  nomenclature   String? // Номенклатура
+  quantity       Int? // Количество
+  pdDate         String? // ПД покупателя (дата)
+
+  workStatuses OrderWorkstationStatus[] // Связь с таблицей Статусы участков
+  tasks        WorkstationTask[] // Связь с заданиями для участков
+}
+
+// Модель Участков
+model Workstation {
+  id        Int     @id @default(autoincrement()) // Первичный ключ
+  name      String // Название участка
+  isVisible Boolean // Видимость (булевое)
+
+  tasks WorkstationTask[] // Связь с заданиями для участков
+}
+
+// Модель Статусов участков
+model OrderWorkstationStatus {
+  id      Int @id @default(autoincrement()) // Первичный ключ
+  orderId Int // Внешний ключ на заказы
+
+  raskroi   Boolean // Проходит обработку или нет (булевое)
+  nesting   Boolean // Проходит обработку или нет (булевое)
+  zerkala   Boolean // Проходит обработку или нет (булевое)
+  kromka    Boolean // Проходит обработку или нет (булевое)
+  prisadka  Boolean // Проходит обработку или нет (булевое)
+  pokraska  Boolean // Проходит обработку или нет (булевое)
+  furnitura Boolean // Проходит обработку или нет (булевое)
+  metall    Boolean // Проходит обработку или нет (булевое)
+  setki     Boolean // Проходит обработку или нет (булевое)
+  konveer   Boolean // Проходит обработку или нет (булевое)
+  sborka    Boolean // Проходит обработку или нет (булевое)
+
+  // Связи
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+// Модель выполнения работы
+model WorkDone {
+  id       Int      @id @default(autoincrement()) // Первичный ключ
+  quantity Int? // Количество выполненной работы
+  date     DateTime // Дата и время выполнения
+
+  taskId Int // Внешний ключ на задания
+  task   WorkstationTask @relation(fields: [taskId], references: [id]) // Связь с таблицей Задания для участков
+}
+
+// Модель Заданий для участков
+model WorkstationTask {
+  id            Int                @id @default(autoincrement()) // Первичный ключ
+  orderId       Int // Внешний ключ на заказы
+  workstationId Int // Внешний ключ на участки
+  completedAll  Int? // сколько сделано
+  completedPros Int? // сколько сделано %
+  completedTask Boolean? // выполнено ли задание
+  status        String? // Статус
+  pd            String? // пд
+  ostatok       Int? // остаток
+  ostatokInpt   Int? // остаток для ввода
+  workDone      WorkDone[] // Связь с таблицей Выполнение работы
+
+  // Связь с покраской
+  workDonePokraska WorkDonePokraska[] // Связь с таблицей WorkDonePokraska
+
+  // Связи
+  order       Order       @relation(fields: [orderId], references: [id])
+  workstation Workstation @relation(fields: [workstationId], references: [id])
+}
+
+// Модель выполнения работы Покраска
+model WorkDonePokraska {
+  id                Int            @id @default(autoincrement()) // Первичный ключ
+  grinding1Fakt     Int? // Шлифовка 1
+
+  ground1Fakt       Int? // Грунт 1
+
+
+  grinding2Fakt     Int? // Шлифовка 2
+
+  ground2Fakt       Int? // Грунт 2
+
+
+  grinding3Fakt     Int? // Шлифовка 3
+
+  ground3Fakt       Int? // Грунт 3
+
+
+  enamel            Int? // Эмаль
+  dateWork        DateTime? // Дата и время выполнения
+
+  // Внешний ключ на задание участка
+  workstationTaskId Int
+  workstationTask   WorkstationTask @relation(fields: [workstationTaskId], references: [id])
+}
+
+
+// -------------------------------------------------------------
+// // Таблица линии
+// model ProductionLine {
+//   id       Int       @id @default(autoincrement()) // Уникальный идентификатор линии производства
+//   name     String    // Название линии производства
+//   visible  Boolean   // Видимость линии производства
+//   sections Section[] // Связь "один ко многим" с таблицей Section
+//   orders   Order[]   // Связь "один ко многим" с таблицей Order
+// }
+
+// // Таблица Участки
+
+// model Section {
+//   id      Int            @id @default(autoincrement()) // Уникальный идентификатор участка
+//   name1   String // Первое название участка
+//   name2   String // Второе название участка
+//   visible Boolean // Видимость участка
+//   lineId  Int // Внешний ключ, связь с таблицей ProductionLine
+//   line    ProductionLine @relation(fields: [lineId], references: [id]) // Связь с таблицей ProductionLine
+//   orders  SectionOrder[] // Связь "один ко многим" с таблицей SectionOrder, один участок может иметь много заказов
+// }
+
+// // Таблица заказы
+// model Order {
+//   id             Int            @id @default(autoincrement()) // Уникальный идентификатор заказа
+//   launchNumber   String?        // Номер запуска заказа
+//   orderName      String?        // Название заказа
+//   article        String?        // Артикул
+//   receiptDate    String?        // Дата поступления заказа
+//   status         String?        // Статус заказа
+//   completed      Boolean?       // Булево поле, показывающее, завершен ли заказ
+//   progress       Float?         // Процент выполнения заказа
+//   nomenclature   String?        // Номенклатура
+//   quantity       Int?           // Количество единиц товара
+//   customerPD     String?        // ПД покупателя
+//   sections       SectionOrder[] // Связь "один ко многим" с таблицей SectionOrder
+//   productionLine ProductionLine @relation(fields: [productionLineId], references: [id]) // Связь с таблицей ProductionLine
+//   productionLineId Int // Внешний ключ, связь с таблицей ProductionLine
+// }
+
+// // Таблица участки обработки
+// model SectionOrder {
+//   id        Int     @id @default(autoincrement()) // Уникальный идентификатор участка обработки заказа
+//   sectionId Int // Внешний ключ, связь с таблицей Section
+//   section   Section @relation(fields: [sectionId], references: [id]) // Связь с таблицей Section
+//   orderId   Int // Внешний ключ, связь с таблицей Order
+//   order     Order   @relation(fields: [orderId], references: [id]) // Связь с таблицей Order
+//   processed Boolean // Булево поле, указывающее, была ли выполнена обработка на участке
+//   tasks     Task[] // Связь "один ко многим" с таблицей Task, один участок обработки может иметь много заданий
+// }
+
+// // Таблица задания на участок
+// model Task {
+//   id             Int          @id @default(autoincrement()) // Уникальный идентификатор задания на участке
+//   sectionOrderId Int // Внешний ключ, связь с таблицей SectionOrder
+//   sectionOrder   SectionOrder @relation(fields: [sectionOrderId], references: [id]) // Связь с таблицей SectionOrder
+//   completed      Float // Количество выполненного в числовом значении
+//   remaining      Float // Оставшееся количество для выполнения
+//   progress       Float // Процент выполнения задания
+//   passed         Boolean // Булево поле, показывающее, был ли участок пройден
+//   doneDetails    DoneDetail[] // Связь "один ко многим" с таблицей DoneDetail, одно задание может иметь много выполненных операций
+// }
+
+// // Что выполнено таблица
+// model DoneDetail {
+//   id       Int      @id @default(autoincrement()) // Уникальный идентификатор записи о выполненной операции
+//   quantity Int // Количество выполненных деталей
+//   date     DateTime // Дата выполнения
+//   taskId   Int // Внешний ключ, связь с таблицей Task
+//   task     Task     @relation(fields: [taskId], references: [id]) // Связь с таблицей Task
+// }
