@@ -25,12 +25,18 @@ interface OrderRow {
     prisadka: boolean;
     pokraska: boolean;
     furnitura: boolean;
-    metall: boolean;
-    setki: boolean;
     konveer: boolean;
     sborka: boolean;
     quantity: number;
     pdDate: string;
+    setki: boolean;
+    provolka: boolean;
+    xba: boolean;
+    moika: boolean;
+    galivanika: boolean;
+    termoplast: boolean;
+    ypakovka: boolean;
+
 }
 
 // Функция для преобразования числового формата Excel в формат ДД.ММ.ГГГГ
@@ -73,12 +79,17 @@ export default function GeneralList() {
                     prisadka: order.workStatuses[0]?.prisadka || false,
                     pokraska: order.workStatuses[0]?.pokraska || false,
                     furnitura: order.workStatuses[0]?.furnitura || false,
-                    metall: order.workStatuses[0]?.metall || false,
-                    setki: order.workStatuses[0]?.setki || false,
                     konveer: order.workStatuses[0]?.konveer || false,
                     sborka: order.workStatuses[0]?.sborka || false,
+                    setki: order.workStatuses[0]?.setki || false,
+                    provolka: order.workStatuses[0]?.provolka || false,
+                    xba: order.workStatuses[0]?.xba || false,
+                    moika: order.workStatuses[0]?.moika || false,
+                    galivanika: order.workStatuses[0]?.galivanika || false,
+                    termoplast: order.workStatuses[0]?.termoplast || false,
+                    ypakovka: order.workStatuses[0]?.ypakovka || false,
                 }));
-    
+
                 // Сортировка по id перед установкой в состояние
                 const sortedOrders = ordersWithStatuses.sort((a, b) => a.id - b.id);
                 setRows(sortedOrders);
@@ -87,7 +98,7 @@ export default function GeneralList() {
                 console.error('Ошибка при загрузке данных:', error);
             });
     }, []);
-    
+
 
     // Обработчик загрузки Excel файла
     const handleFileUpload = (e) => {
@@ -100,6 +111,8 @@ export default function GeneralList() {
             const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
 
             const loadedRows = worksheet.slice(1).map((row, index) => {
+
+
                 if (row[0]) {
                     return {
                         id: index + 1,
@@ -107,26 +120,35 @@ export default function GeneralList() {
                         orderName: row[1] || '',
                         article: row[2] || '',
                         receivedDate: formatDateFromExcel(row[3]),
-                        status: row[4] || '',
-                        isCompleted: row[5] === 'да',
-                        completionRate: row[6] || 0,
-                        nomenclature: row[7] || '',
-                        quantity: row[8] || 0,
-                        pdDate: formatDateFromExcel(row[9]),
-                        raskroi: row[10] === 'да',
-                        nesting: row[11] === 'да',
-                        zerkala: row[12] === 'да',
-                        kromka: row[13] === 'да',
-                        prisadka: row[14] === 'да',
-                        pokraska: row[15] === 'да',
-                        furnitura: row[16] === 'да',
-                        konveer: row[17] === 'да',
-                        sborka: row[18] === 'да'
+                        // status: row[4] || '',
+                        // isCompleted: row[5] === 'да',
+                        // completionRate: row[6] || 0,
+                        nomenclature: row[4] || '',
+                        quantity: row[5] || 0,
+                        pdDate: formatDateFromExcel(row[6]),
+                        raskroi: row[7]?.trim().toLowerCase() === 'да',
+                        nesting: row[8]?.trim().toLowerCase() === 'да',
+                        zerkala: row[9]?.trim().toLowerCase() === 'да',
+                        kromka: row[10]?.trim().toLowerCase() === 'да',
+                        prisadka: row[11]?.trim().toLowerCase() === 'да',
+                        pokraska: row[12]?.trim().toLowerCase() === 'да',
+                        furnitura: row[13]?.trim().toLowerCase() === 'да',
+                        konveer: row[14]?.trim().toLowerCase() === 'да',
+                        sborka: row[15]?.trim().toLowerCase() === 'да',
+
+                        setki: row[16]?.trim().toLowerCase() === 'да',
+                        provolka: row[17]?.trim().toLowerCase() === 'да',
+                        xba: row[18]?.trim().toLowerCase() === 'да',
+                        moika: row[19]?.trim().toLowerCase() === 'да',
+                        galivanika: row[20]?.trim().toLowerCase() === 'да',
+                        termoplast: row[21]?.trim().toLowerCase() === 'да',
+                        ypakovka: row[22]?.trim().toLowerCase() === 'да',
                     };
                 }
                 return null;
             }).filter(row => row !== null);
 
+            console.log(loadedRows)
             setRows(prevRows => [...prevRows, ...loadedRows]);
             setNewRows(loadedRows); // Сохраните загруженные строки в новом состоянии
             setIsNewRowAdded(true);
@@ -153,12 +175,17 @@ export default function GeneralList() {
             prisadka: false,
             pokraska: false,
             furnitura: false,
-            metall: false,
-            setki: false,
             konveer: false,
             sborka: false,
             quantity: 0,
-            pdDate: ''
+            pdDate: '',
+            setki: false,
+            provolka: false,
+            xba: false,
+            moika: false,
+            galivanika: false,
+            termoplast: false,
+            ypakovka: false,
         };
         setRows((prevRows) => [...prevRows, newRow]);
         setNewRowId(newRow.id);
@@ -167,36 +194,36 @@ export default function GeneralList() {
     };
 
     // Обработчик изменения строки
-// Обработчик изменения строки
-const handleRowEdit = (newRow: GridRowModel) => {
-    const updatedRows = rows.map(row => (row.id === newRow.id ? { ...row, ...newRow } : row));
-    setRows(updatedRows);
+    // Обработчик изменения строки
+    const handleRowEdit = (newRow: GridRowModel) => {
+        const updatedRows = rows.map(row => (row.id === newRow.id ? { ...row, ...newRow } : row));
+        setRows(updatedRows);
 
-    // Установите isEditing в true, только если редактируем существующую строку
-    if (newRows.find(row => row.id === newRow.id)) {
-        // Если это новая строка, не меняем isEditing
-        setIsEditing(false);
-    } else {
-        setIsEditing(true); // Устанавливаем isEditing в true для существующих строк
-    }
+        // Установите isEditing в true, только если редактируем существующую строку
+        if (newRows.find(row => row.id === newRow.id)) {
+            // Если это новая строка, не меняем isEditing
+            setIsEditing(false);
+        } else {
+            setIsEditing(true); // Устанавливаем isEditing в true для существующих строк
+        }
 
-    // Добавление ID изменённой строки в состояние
-    setEditedRowIds(prevIds => {
-        const newIds = new Set(prevIds);
-        newIds.add(newRow.id);
-        return newIds;
-    });
+        // Добавление ID изменённой строки в состояние
+        setEditedRowIds(prevIds => {
+            const newIds = new Set(prevIds);
+            newIds.add(newRow.id);
+            return newIds;
+        });
 
-    // Если строка новая, обновите newRows
-    setNewRows(prevNewRows => {
-        return prevNewRows.map(row => (row.id === newRow.id ? { ...row, ...newRow } : row));
-    });
+        // Если строка новая, обновите newRows
+        setNewRows(prevNewRows => {
+            return prevNewRows.map(row => (row.id === newRow.id ? { ...row, ...newRow } : row));
+        });
 
-    return newRow;
-};
+        return newRow;
+    };
 
 
-    
+
 
     // Сохранение новых строк в базу данных
     const handleSaveNew = async () => {
@@ -207,8 +234,7 @@ const handleRowEdit = (newRow: GridRowModel) => {
                         ...newRow,
                         launchNumber: String(newRow.launchNumber), // Преобразуем в строку
                         quantity: Number(newRow.quantity),
-                        metall: false, // Убедитесь, что здесь есть значение (true или false)
-                        setki: false,
+
                     };
                     await axios.post('/api/createOrder', rowToSend);
                     console.log('Данные строки успешно сохранены');
@@ -223,7 +249,7 @@ const handleRowEdit = (newRow: GridRowModel) => {
     // Сохранение изменений в существующих строках
     const handleSaveChanges = async () => {
         if (!isEditing) return;
-    
+
         try {
             await Promise.all(
                 Array.from(editedRowIds).map(async (id) => {
@@ -252,10 +278,15 @@ const handleRowEdit = (newRow: GridRowModel) => {
                                 prisadka: row.prisadka,
                                 pokraska: row.pokraska,
                                 furnitura: row.furnitura,
-                                metall: row.metall,
-                                setki: row.setki,
                                 konveer: row.konveer,
                                 sborka: row.sborka,
+                                setki: row.setki,
+                                provolka: row.provolka,
+                                xba: row.xba,
+                                moika: row.moika,
+                                galivanika: row.galivanika,
+                                termoplast: row.termoplast,
+                                ypakovka: row.ypakovka,
                             }
                         };
                         await axios.post(`/api/orderUpdate`, rowToSend);
@@ -269,7 +300,7 @@ const handleRowEdit = (newRow: GridRowModel) => {
             console.error('Ошибка при сохранении изменений:', error);
         }
     };
-    
+
 
     const columns: GridColDef[] = [
         { field: 'launchNumber', headerName: '№ запуска', editable: true, width: 70 },
@@ -289,10 +320,15 @@ const handleRowEdit = (newRow: GridRowModel) => {
         { field: 'prisadka', headerName: 'Присадка', editable: true, type: 'boolean' },
         { field: 'pokraska', headerName: 'Покраска', editable: true, type: 'boolean' },
         { field: 'furnitura', headerName: 'Фурнитура', editable: true, type: 'boolean' },
-        { field: 'metall', headerName: 'Металл', editable: true, type: 'boolean' },
-        { field: 'setki', headerName: 'Сетки', editable: true, type: 'boolean' },
         { field: 'konveer', headerName: 'Конвейер', editable: true, type: 'boolean' },
-        { field: 'sborka', headerName: 'Сборка', editable: true, type: 'boolean' }
+        { field: 'sborka', headerName: 'Сборка', editable: true, type: 'boolean' },
+        { field: 'setki', headerName: 'Сетки', editable: true, type: 'boolean' },
+        { field: 'provolka', headerName: 'Проволка', editable: true, type: 'boolean' },
+        { field: 'xba', headerName: 'ХВА', editable: true, type: 'boolean' },
+        { field: 'moika', headerName: 'Мойка', editable: true, type: 'boolean' },
+        { field: 'galivanika', headerName: 'Гальваника', editable: true, type: 'boolean' },
+        { field: 'termoplast', headerName: 'Термопласт', editable: true, type: 'boolean' },
+        { field: 'ypakovka', headerName: 'Упаковка', editable: true, type: 'boolean' },
     ];
 
     return (

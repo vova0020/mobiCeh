@@ -1,12 +1,28 @@
+'use client'
 // components/Navbar.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Link from 'next/link';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 
 const Navbar1: React.FC = () => {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>, menu: string) => {
+    setAnchorEl(event.currentTarget);
+    setOpenMenu(menu);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setOpenMenu(null);
+  };
+
   return (
     <AppBar position="static">
       <Toolbar>
@@ -22,34 +38,113 @@ const Navbar1: React.FC = () => {
         <Link href="/pages/statistik" passHref>
           <Button color="inherit">Статистика</Button>
         </Link>
-        <Link href="/pages/raskroi" passHref>
-          <Button color="inherit">Раскрой</Button>
+
+        {/* Выпадающий список для Раскрой и Нестинг */}
+        <Button
+          color="inherit"
+          onClick={(event) => handleMenuClick(event, 'manufacturing')}
+        >
+          Основное производство
+        </Button>
+        <Menu
+          anchorEl={anchorEl}
+          open={openMenu === 'manufacturing'}
+          onClose={handleMenuClose}
+        >
+          <MenuItem onClick={handleMenuClose}>
+            <Link href="/pages/Раскрой" passHref>
+              Раскрой
+            </Link>
+          </MenuItem>
+          <MenuItem onClick={handleMenuClose}>
+            <Link href="/pages/Нестинг" passHref>
+              Нестинг
+            </Link>
+          </MenuItem>
+          <MenuItem onClick={handleMenuClose}>
+            <Link href="/pages/Зеркала" passHref>
+              Зеркала
+            </Link>
+          </MenuItem>
+          <MenuItem onClick={handleMenuClose}>
+            <Link href="/pages/Кромка" passHref>
+              Кромка
+            </Link>
+          </MenuItem>
+          <MenuItem onClick={handleMenuClose}>
+            <Link href="/pages/Присадка" passHref>
+              Присадка
+            </Link>
+          </MenuItem>
+          <MenuItem onClick={handleMenuClose}>
+            <Link href="/pages/pokraska" passHref>
+              Покраска
+            </Link>
+          </MenuItem>
+          <MenuItem onClick={handleMenuClose}>
+            <Link href="/pages/Фурнитура" passHref>
+              Фурнитура
+            </Link>
+          </MenuItem>
+          <MenuItem onClick={handleMenuClose}>
+            <Link href="/pages/Сборка" passHref>
+              Сборка
+            </Link>
+          </MenuItem>
+          <MenuItem onClick={handleMenuClose}>
+            <Link href="/pages/Конвеер" passHref>
+              Конвеер
+            </Link>
+          </MenuItem>
+        </Menu>
+
+        <Link href="/pages/Сетки" passHref>
+          <Button color="inherit">Сетки</Button>
         </Link>
-        <Link href="/pages/nesting" passHref>
-          <Button color="inherit">Нестинг</Button>
-        </Link>
-        <Link href="/pages/zerkala" passHref>
-          <Button color="inherit">Зеркала</Button>
-        </Link>
-        <Link href="/pages/kromka" passHref>
-          <Button color="inherit">Кромка</Button>
-        </Link>
-        <Link href="/pages/prisadka" passHref>
-          <Button color="inherit">Присадка</Button>
-        </Link>
-        <Link href="/pages/pokraska" passHref>
-          <Button color="inherit">Покраска</Button>
-        </Link>
-        <Link href="/pages/furnitura" passHref>
-          <Button color="inherit">Фурнитура</Button>
-        </Link>
-        <Link href="/pages/sborka" passHref>
-          <Button color="inherit">Сборка</Button>
-        </Link>
-        <Link href="/pages/konveer" passHref>
-          <Button color="inherit">Конвеер</Button>
-        </Link>
-        
+
+        {/* Выпадающий список для Мойка и Гальваника */}
+        <Button
+          color="inherit"
+          onClick={(event) => handleMenuClick(event, 'finishing')}
+        >
+          Метал
+        </Button>
+        <Menu
+          anchorEl={anchorEl}
+          open={openMenu === 'finishing'}
+          onClose={handleMenuClose}
+        >
+          <MenuItem onClick={handleMenuClose}>
+            <Link href="/pages/Проволка" passHref>
+              Проволка
+            </Link>
+          </MenuItem>
+          <MenuItem onClick={handleMenuClose}>
+            <Link href="/pages/ХВА" passHref>
+              ХВА
+            </Link>
+          </MenuItem>
+          <MenuItem onClick={handleMenuClose}>
+            <Link href="/pages/Мойка" passHref>
+              Мойка
+            </Link>
+          </MenuItem>
+          <MenuItem onClick={handleMenuClose}>
+            <Link href="/pages/Гальваника" passHref>
+              Гальваника
+            </Link>
+          </MenuItem>
+          <MenuItem onClick={handleMenuClose}>
+            <Link href="/pages/Термопласт" passHref>
+              Термопласт
+            </Link>
+          </MenuItem>
+          <MenuItem onClick={handleMenuClose}>
+            <Link href="/pages/Упаковка" passHref>
+              Упаковка
+            </Link>
+          </MenuItem>
+        </Menu>
       </Toolbar>
     </AppBar>
   );

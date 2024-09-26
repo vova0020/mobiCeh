@@ -46,10 +46,16 @@ model OrderWorkstationStatus {
   prisadka  Boolean // Проходит обработку или нет (булевое)
   pokraska  Boolean // Проходит обработку или нет (булевое)
   furnitura Boolean // Проходит обработку или нет (булевое)
-  metall    Boolean // Проходит обработку или нет (булевое)
   setki     Boolean // Проходит обработку или нет (булевое)
   konveer   Boolean // Проходит обработку или нет (булевое)
   sborka    Boolean // Проходит обработку или нет (булевое)
+  
+  provolka    Boolean // Проходит обработку или нет (булевое)
+  xba    Boolean // Проходит обработку или нет (булевое)
+  moika    Boolean // Проходит обработку или нет (булевое)
+  galivanika    Boolean // Проходит обработку или нет (булевое)
+  termoplast    Boolean // Проходит обработку или нет (булевое)
+  ypakovka    Boolean // Проходит обработку или нет (булевое)
 
   // Связи
   order Order @relation(fields: [orderId], references: [id])

@@ -67,10 +67,15 @@ export default class prismaInteraction {
                         prisadka: workStatuses.prisadka,
                         pokraska: workStatuses.pokraska,
                         furnitura: workStatuses.furnitura,
-                        metall: workStatuses.metall,
                         setki: workStatuses.setki,
                         konveer: workStatuses.konveer,
                         sborka: workStatuses.sborka,
+                        provolka: workStatuses.provolka,
+                        xba: workStatuses.xba,
+                        moika: workStatuses.moika,
+                        galivanika: workStatuses.galivanika,
+                        termoplast: workStatuses.termoplast,
+                        ypakovka: workStatuses.ypakovka,
                     },
                 });
             } else {
@@ -148,6 +153,27 @@ export default class prismaInteraction {
 
             const pdKonveerSborka = new Date(pdDate);
             pdKonveerSborka.setDate(pdKonveerSborka.getDate() - 3); // Смещение за 3 дня до PD
+            
+            const pdKonveerSetki = new Date(pdDate);
+            pdKonveerSetki.setDate(pdKonveerSetki.getDate() - 3); // Смещение за 3 дня до PD
+
+            const pdKonveerProvolka = new Date(pdDate);
+            pdKonveerProvolka.setDate(pdKonveerProvolka.getDate() - 12); // Смещение за 3 дня до PD
+            
+            const pdKonveerXba= new Date(pdDate);
+            pdKonveerXba.setDate(pdKonveerXba.getDate() - 10); // Смещение за 3 дня до PD
+
+            const pdKonveerMoika = new Date(pdDate);
+            pdKonveerMoika.setDate(pdKonveerMoika.getDate() - 7); // Смещение за 3 дня до PD
+
+            const pdKonveerGalivanika = new Date(pdDate);
+            pdKonveerGalivanika.setDate(pdKonveerGalivanika.getDate() - 6); // Смещение за 3 дня до PD
+
+            const pdKonveerTermoplast = new Date(pdDate);
+            pdKonveerTermoplast.setDate(pdKonveerTermoplast.getDate() - 4); // Смещение за 3 дня до PD
+
+            const pdKonveerYpakovka = new Date(pdDate);
+            pdKonveerYpakovka.setDate(pdKonveerYpakovka.getDate() - 2); // Смещение за 3 дня до PD
 
             // Обрабатываем задания для каждого участка
             await handleTaskUpdate('Раскрой', workStatuses.raskroi, receivedDate);
@@ -159,6 +185,14 @@ export default class prismaInteraction {
             await handleTaskUpdate('Фурнитура', workStatuses.furnitura, pdFurnitura);
             await handleTaskUpdate('Конвеер', workStatuses.konveer, pdKonveerSborka);
             await handleTaskUpdate('Сборка', workStatuses.sborka, pdKonveerSborka);
+
+            await handleTaskUpdate('Сетки', workStatuses.setki, pdKonveerSetki); 
+            await handleTaskUpdate('Проволка', workStatuses.provolka, pdKonveerProvolka);
+            await handleTaskUpdate('ХВА', workStatuses.xba, pdKonveerXba);
+            await handleTaskUpdate('Мойка', workStatuses.moika, pdKonveerMoika);
+            await handleTaskUpdate('Гальваника', workStatuses.galivanika, pdKonveerGalivanika);
+            await handleTaskUpdate('Термопласт', workStatuses.termoplast, pdKonveerTermoplast);
+            await handleTaskUpdate('Упаковка', workStatuses.ypakovka, pdKonveerYpakovka);
 
             // Если есть задания, создаем их
             if (tasks.length > 0) {
@@ -187,6 +221,7 @@ export default class prismaInteraction {
         nomenclature: string,
         quantity: number,
         pdDate: string,
+
         raskroi: boolean;
         nesting: boolean;
         zerkala: boolean;
@@ -194,10 +229,17 @@ export default class prismaInteraction {
         prisadka: boolean;
         pokraska: boolean;
         furnitura: boolean;
-        metall: boolean;
-        setki: boolean;
+
+
         konveer: boolean;
         sborka: boolean;
+        setki: boolean;
+        provolka: boolean;
+        xba: boolean;
+        moika: boolean;
+        galivanika: boolean;
+        termoplast: boolean;
+        ypakovka: boolean;
     }) {
         try {
             // Функция для разбора даты из строки формата DD.MM.YYYY
@@ -238,10 +280,26 @@ export default class prismaInteraction {
             const pdKonveerSborka = new Date(pdDate);
             pdKonveerSborka.setDate(pdKonveerSborka.getDate() - 3); // Смещение за 3 дня до PD
 
-            console.log(formatDate(pdKromka) + ' кромка');
-            console.log(formatDate(pdPrisadka) + ' присадка');
-            console.log(formatDate(pdPokraska) + ' покраска');
-            console.log(formatDate(pdFurnitura) + ' фурнитура');
+            const pdKonveerSetki = new Date(pdDate);
+            pdKonveerSetki.setDate(pdKonveerSetki.getDate() - 3); // Смещение за 3 дня до PD
+
+            const pdKonveerProvolka = new Date(pdDate);
+            pdKonveerProvolka.setDate(pdKonveerProvolka.getDate() - 12); // Смещение за 3 дня до PD
+            
+            const pdKonveerXba= new Date(pdDate);
+            pdKonveerXba.setDate(pdKonveerXba.getDate() - 10); // Смещение за 3 дня до PD
+
+            const pdKonveerMoika = new Date(pdDate);
+            pdKonveerMoika.setDate(pdKonveerMoika.getDate() - 7); // Смещение за 3 дня до PD
+
+            const pdKonveerGalivanika = new Date(pdDate);
+            pdKonveerGalivanika.setDate(pdKonveerGalivanika.getDate() - 6); // Смещение за 3 дня до PD
+
+            const pdKonveerTermoplast = new Date(pdDate);
+            pdKonveerTermoplast.setDate(pdKonveerTermoplast.getDate() - 4); // Смещение за 3 дня до PD
+
+            const pdKonveerYpakovka = new Date(pdDate);
+            pdKonveerYpakovka.setDate(pdKonveerYpakovka.getDate() - 2); // Смещение за 3 дня до PD
 
             const newOrder = await prisma.order.create({
                 data: {
@@ -264,10 +322,15 @@ export default class prismaInteraction {
                             prisadka: data.prisadka,
                             pokraska: data.pokraska,
                             furnitura: data.furnitura,
-                            metall: data.metall,
-                            setki: data.setki,
                             konveer: data.konveer,
                             sborka: data.sborka,
+                            setki: data.setki,
+                            provolka: data.provolka,
+                            xba: data.xba,
+                            moika: data.moika,
+                            galivanika: data.galivanika,
+                            termoplast: data.termoplast,
+                            ypakovka: data.ypakovka,
                         }
                     }
                 },
@@ -306,6 +369,14 @@ export default class prismaInteraction {
             if (data.konveer) addTask('Конвеер', pdKonveerSborka);
             if (data.sborka) addTask('Сборка', pdKonveerSborka);
 
+            if (data.setki) addTask('Сетки', pdKonveerSetki);   
+            if (data.provolka) addTask('Проволка', pdKonveerProvolka);
+            if (data.xba) addTask('ХВА', pdKonveerXba);
+            if (data.moika) addTask('Мойка', pdKonveerMoika);
+            if (data.galivanika) addTask('Гальваника', pdKonveerGalivanika);
+            if (data.termoplast) addTask('Термопласт', pdKonveerTermoplast);
+            if (data.ypakovka) addTask('Упаковка', pdKonveerYpakovka);
+
             await prisma.workstationTask.createMany({
                 data: tasks,
             });
@@ -329,7 +400,14 @@ export default class prismaInteraction {
             'Покраска': 'pokraska',
             'Фурнитура': 'furnitura',
             'Конвеер': 'konveer',
-            'Сборка': 'sborka'
+            'Сборка': 'sborka',
+            'Сетки': 'setki',
+            'Проволка': 'provolka',
+            'ХВА': 'xba',
+            'Мойка': 'moika',
+            'Гальваника': 'galivanika',
+            'Термопласт': 'termoplast',
+            'Упаковка': 'ypakovka',
         }[work];
 
         if (workstationField) {
@@ -783,8 +861,8 @@ export default class prismaInteraction {
             await prisma.$disconnect();
         }
     }
-    
-    
+
+
 }
 
 
