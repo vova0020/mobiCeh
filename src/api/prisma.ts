@@ -12,9 +12,55 @@ export default class prismaInteraction {
         try {
             const orders = await prisma.order.findMany({
                 include: {
-                    workStatuses: true // Включаем связь со статусами участков
+                    workStatuses: true,  // Включаем связь со статусами участков
+                    tasks: true          // Включаем задания для участков
                 }
             });
+
+            // Логика для обновления статусов заказа, вычисления completionRate и isCompleted
+            orders.forEach(order => {
+                if (order.tasks.length > 0) {
+                    let totalCompletedPros = 0;
+                    let hasWorkInProgress = false;
+
+                    // Считаем общую сумму прогресса
+                    order.tasks.forEach(task => {
+                        const completedPros = task.completedPros || 0;
+                        totalCompletedPros += completedPros;
+
+                        // Если хотя бы одно задание имеет прогресс > 0, то статус "В работе"
+                        if (completedPros > 0) {
+                            hasWorkInProgress = true;
+                        }
+                    });
+
+                    const averageCompletedPros = totalCompletedPros / order.tasks.length;
+
+                    // Определяем статус заказа
+                    if (averageCompletedPros > 99) {
+                        order.status = "Завершен";
+                    } else if (hasWorkInProgress) {
+                        order.status = "В работе";
+                    } else {
+                        order.status = "Ожидание";
+                    }
+
+                    // Рассчитываем completionRate как среднее значение completedPros по всем участкам
+                    order.completionRate = averageCompletedPros;
+
+                    // Устанавливаем isCompleted в true, если completionRate > 99
+                    if (order.completionRate > 99) {
+                        order.isCompleted = true;
+                    } else {
+                        order.isCompleted = false;
+                    }
+                } else {
+                    order.status = "Ожидание";  // Если нет заданий, то статус "Ожидание"
+                    order.completionRate = 0;   // Если нет заданий, то completionRate = 0
+                    order.isCompleted = false;  // Если нет заданий, то заказ не завершен
+                }
+            });
+
             return orders;
         } catch (error) {
             console.error('Ошибка при получении данных:', error);
@@ -22,6 +68,8 @@ export default class prismaInteraction {
             await prisma.$disconnect();
         }
     }
+
+
 
     // Метод для обновления заказа 
     async updateOrder(id: number, orders: any, workStatuses: any) {
@@ -41,10 +89,12 @@ export default class prismaInteraction {
                         receivedDate: orders.receivedDate,
                         status: orders.status,
                         isCompleted: orders.isCompleted,
-                        completionRate: orders.completionRate,
+                        completionRate: parseFloat(orders.completionRate.replace('%', '')),
                         nomenclature: orders.nomenclature,
                         quantity: orders.quantity,
                         pdDate: orders.pdDate,
+                        pdDateRaskroi: orders.pdDateRaskroi,
+                        pdDateNesting: orders.pdDateNesting,
                     },
                 });
             } else {
@@ -68,6 +118,7 @@ export default class prismaInteraction {
                         pokraska: workStatuses.pokraska,
                         furnitura: workStatuses.furnitura,
                         setki: workStatuses.setki,
+                        metal: workStatuses.metal,
                         konveer: workStatuses.konveer,
                         sborka: workStatuses.sborka,
                         provolka: workStatuses.provolka,
@@ -133,13 +184,19 @@ export default class prismaInteraction {
                 const year = date.getFullYear(); // Год
                 return `${day}.${month}.${year}`;
             };
+            // console.log(orders);
+            // console.log(orders.pdDateRaskroi);
+            // console.log(orders.pdDateNesting);
+            
 
             // Преобразуем строки дат в объекты Date
             const receivedDate = parseDate(orders.receivedDate);
             const pdDate = parseDate(orders.pdDate);
+            const pdDateRaskroi = parseDate(orders.pdDateRaskroi);
+            const pdDateNesting = parseDate(orders.pdDateNesting);
 
             // Рассчитываем pd для каждого участка с учетом смещений
-            const pdKromka = new Date(receivedDate);
+            const pdKromka = new Date(pdDateRaskroi);
             pdKromka.setDate(pdKromka.getDate() + 1); // Смещение на 1 день
 
             const pdPrisadka = new Date(pdKromka);
@@ -153,31 +210,34 @@ export default class prismaInteraction {
 
             const pdKonveerSborka = new Date(pdDate);
             pdKonveerSborka.setDate(pdKonveerSborka.getDate() - 3); // Смещение за 3 дня до PD
-            
+
             const pdKonveerSetki = new Date(pdDate);
             pdKonveerSetki.setDate(pdKonveerSetki.getDate() - 3); // Смещение за 3 дня до PD
 
             const pdKonveerProvolka = new Date(pdDate);
-            pdKonveerProvolka.setDate(pdKonveerProvolka.getDate() - 12); // Смещение за 3 дня до PD
-            
-            const pdKonveerXba= new Date(pdDate);
-            pdKonveerXba.setDate(pdKonveerXba.getDate() - 10); // Смещение за 3 дня до PD
+            pdKonveerProvolka.setDate(pdKonveerProvolka.getDate() - 12); // Смещение за 12 дня до PD
+
+            const pdKonveerXba = new Date(pdDate);
+            pdKonveerXba.setDate(pdKonveerXba.getDate() - 10); // Смещение за 10 дня до PD
 
             const pdKonveerMoika = new Date(pdDate);
-            pdKonveerMoika.setDate(pdKonveerMoika.getDate() - 7); // Смещение за 3 дня до PD
+            pdKonveerMoika.setDate(pdKonveerMoika.getDate() - 7); // Смещение за 7 дня до PD
 
             const pdKonveerGalivanika = new Date(pdDate);
-            pdKonveerGalivanika.setDate(pdKonveerGalivanika.getDate() - 6); // Смещение за 3 дня до PD
+            pdKonveerGalivanika.setDate(pdKonveerGalivanika.getDate() - 6); // Смещение за 6 дня до PD
 
             const pdKonveerTermoplast = new Date(pdDate);
-            pdKonveerTermoplast.setDate(pdKonveerTermoplast.getDate() - 4); // Смещение за 3 дня до PD
+            pdKonveerTermoplast.setDate(pdKonveerTermoplast.getDate() - 4); // Смещение за 4 дня до PD
 
             const pdKonveerYpakovka = new Date(pdDate);
-            pdKonveerYpakovka.setDate(pdKonveerYpakovka.getDate() - 2); // Смещение за 3 дня до PD
+            pdKonveerYpakovka.setDate(pdKonveerYpakovka.getDate() - 2); // Смещение за 2 дня до PD
+
+            const pdKonveerMetal = new Date(pdDate);
+            pdKonveerMetal.setDate(pdKonveerMetal.getDate() - 2); // Смещение за 2 дня до PD
 
             // Обрабатываем задания для каждого участка
-            await handleTaskUpdate('Раскрой', workStatuses.raskroi, receivedDate);
-            await handleTaskUpdate('Нестинг', workStatuses.nesting, receivedDate);
+            await handleTaskUpdate('Раскрой', workStatuses.raskroi, pdDateRaskroi);
+            await handleTaskUpdate('Нестинг', workStatuses.nesting, pdDateNesting);
             await handleTaskUpdate('Зеркала', workStatuses.zerkala, receivedDate);
             await handleTaskUpdate('Кромка', workStatuses.kromka, pdKromka);
             await handleTaskUpdate('Присадка', workStatuses.prisadka, pdPrisadka);
@@ -186,13 +246,14 @@ export default class prismaInteraction {
             await handleTaskUpdate('Конвеер', workStatuses.konveer, pdKonveerSborka);
             await handleTaskUpdate('Сборка', workStatuses.sborka, pdKonveerSborka);
 
-            await handleTaskUpdate('Сетки', workStatuses.setki, pdKonveerSetki); 
+            await handleTaskUpdate('Сетки', workStatuses.setki, pdKonveerSetki);
             await handleTaskUpdate('Проволка', workStatuses.provolka, pdKonveerProvolka);
             await handleTaskUpdate('ХВА', workStatuses.xba, pdKonveerXba);
             await handleTaskUpdate('Мойка', workStatuses.moika, pdKonveerMoika);
             await handleTaskUpdate('Гальваника', workStatuses.galivanika, pdKonveerGalivanika);
             await handleTaskUpdate('Термопласт', workStatuses.termoplast, pdKonveerTermoplast);
             await handleTaskUpdate('Упаковка', workStatuses.ypakovka, pdKonveerYpakovka);
+            await handleTaskUpdate('Металлокаркасы', workStatuses.metal, pdKonveerMetal);
 
             // Если есть задания, создаем их
             if (tasks.length > 0) {
@@ -221,6 +282,8 @@ export default class prismaInteraction {
         nomenclature: string,
         quantity: number,
         pdDate: string,
+        pdDateRaskroi: string,
+        pdDateNesting: string,
 
         raskroi: boolean;
         nesting: boolean;
@@ -234,6 +297,7 @@ export default class prismaInteraction {
         konveer: boolean;
         sborka: boolean;
         setki: boolean;
+        metal: boolean;
         provolka: boolean;
         xba: boolean;
         moika: boolean;
@@ -263,9 +327,11 @@ export default class prismaInteraction {
             // Преобразуем строки дат в объекты Date
             const receivedDate = parseDate(data.receivedDate);
             const pdDate = parseDate(data.pdDate);
+            const pdDateRaskroi = parseDate(data.pdDateRaskroi);
+            const pdDateNesting = parseDate(data.pdDateNesting);
 
             // Рассчитываем pd для каждого участка с учетом смещений
-            const pdKromka = new Date(receivedDate);
+            const pdKromka = new Date(pdDateRaskroi);
             pdKromka.setDate(pdKromka.getDate() + 1); // Смещение на 1 день
 
             const pdPrisadka = new Date(pdKromka);
@@ -285,8 +351,8 @@ export default class prismaInteraction {
 
             const pdKonveerProvolka = new Date(pdDate);
             pdKonveerProvolka.setDate(pdKonveerProvolka.getDate() - 12); // Смещение за 3 дня до PD
-            
-            const pdKonveerXba= new Date(pdDate);
+
+            const pdKonveerXba = new Date(pdDate);
             pdKonveerXba.setDate(pdKonveerXba.getDate() - 10); // Смещение за 3 дня до PD
 
             const pdKonveerMoika = new Date(pdDate);
@@ -301,6 +367,9 @@ export default class prismaInteraction {
             const pdKonveerYpakovka = new Date(pdDate);
             pdKonveerYpakovka.setDate(pdKonveerYpakovka.getDate() - 2); // Смещение за 3 дня до PD
 
+            const pdKonveerMetal = new Date(pdDate);
+            pdKonveerMetal.setDate(pdKonveerMetal.getDate() - 2); // Смещение за 3 дня до PD
+
             const newOrder = await prisma.order.create({
                 data: {
                     launchNumber: data.launchNumber,
@@ -312,7 +381,9 @@ export default class prismaInteraction {
                     completionRate: data.completionRate,
                     nomenclature: data.nomenclature,
                     quantity: data.quantity,
-                    pdDate: formatDate(pdDate), // Форматируем дату PD
+                    pdDate: formatDate(pdDate),
+                    pdDateRaskroi: formatDate(pdDateRaskroi),
+                    pdDateNesting: formatDate(pdDateNesting), 
                     workStatuses: {
                         create: {
                             raskroi: data.raskroi,
@@ -324,6 +395,7 @@ export default class prismaInteraction {
                             furnitura: data.furnitura,
                             konveer: data.konveer,
                             sborka: data.sborka,
+                            metal: data.metal,
                             setki: data.setki,
                             provolka: data.provolka,
                             xba: data.xba,
@@ -359,8 +431,8 @@ export default class prismaInteraction {
             };
 
             // Создаем задания для каждого участка с учетом рассчитанного pd
-            if (data.raskroi) addTask('Раскрой', receivedDate);
-            if (data.nesting) addTask('Нестинг', receivedDate);
+            if (data.raskroi) addTask('Раскрой', pdDateRaskroi);
+            if (data.nesting) addTask('Нестинг', pdDateNesting);
             if (data.zerkala) addTask('Зеркала', receivedDate);
             if (data.kromka) addTask('Кромка', pdKromka);
             if (data.prisadka) addTask('Присадка', pdPrisadka);
@@ -369,13 +441,14 @@ export default class prismaInteraction {
             if (data.konveer) addTask('Конвеер', pdKonveerSborka);
             if (data.sborka) addTask('Сборка', pdKonveerSborka);
 
-            if (data.setki) addTask('Сетки', pdKonveerSetki);   
+            if (data.setki) addTask('Сетки', pdKonveerSetki);
             if (data.provolka) addTask('Проволка', pdKonveerProvolka);
             if (data.xba) addTask('ХВА', pdKonveerXba);
             if (data.moika) addTask('Мойка', pdKonveerMoika);
             if (data.galivanika) addTask('Гальваника', pdKonveerGalivanika);
             if (data.termoplast) addTask('Термопласт', pdKonveerTermoplast);
             if (data.ypakovka) addTask('Упаковка', pdKonveerYpakovka);
+            if (data.metal) addTask('Металлокаркасы', pdKonveerMetal);
 
             await prisma.workstationTask.createMany({
                 data: tasks,
@@ -401,8 +474,9 @@ export default class prismaInteraction {
             'Фурнитура': 'furnitura',
             'Конвеер': 'konveer',
             'Сборка': 'sborka',
+            'Металлокаркасы': 'metal',
             'Сетки': 'setki',
-            'Проволка': 'provolka',
+            'Подготовка': 'provolka',
             'ХВА': 'xba',
             'Мойка': 'moika',
             'Гальваника': 'galivanika',

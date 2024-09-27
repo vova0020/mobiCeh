@@ -20,6 +20,8 @@ model Order {
   nomenclature   String? // Номенклатура
   quantity       Int? // Количество
   pdDate         String? // ПД покупателя (дата)
+  pdDateRaskroi         String? // ПД покупателя (дата)
+  pdDateNesting         String? // ПД покупателя (дата)
 
   workStatuses OrderWorkstationStatus[] // Связь с таблицей Статусы участков
   tasks        WorkstationTask[] // Связь с заданиями для участков
@@ -44,18 +46,19 @@ model OrderWorkstationStatus {
   zerkala   Boolean // Проходит обработку или нет (булевое)
   kromka    Boolean // Проходит обработку или нет (булевое)
   prisadka  Boolean // Проходит обработку или нет (булевое)
+  metal     Boolean // Проходит обработку или нет (булевое)
   pokraska  Boolean // Проходит обработку или нет (булевое)
   furnitura Boolean // Проходит обработку или нет (булевое)
   setki     Boolean // Проходит обработку или нет (булевое)
   konveer   Boolean // Проходит обработку или нет (булевое)
   sborka    Boolean // Проходит обработку или нет (булевое)
-  
-  provolka    Boolean // Проходит обработку или нет (булевое)
-  xba    Boolean // Проходит обработку или нет (булевое)
-  moika    Boolean // Проходит обработку или нет (булевое)
-  galivanika    Boolean // Проходит обработку или нет (булевое)
-  termoplast    Boolean // Проходит обработку или нет (булевое)
-  ypakovka    Boolean // Проходит обработку или нет (булевое)
+
+  provolka   Boolean // Проходит обработку или нет (булевое)
+  xba        Boolean // Проходит обработку или нет (булевое)
+  moika      Boolean // Проходит обработку или нет (булевое)
+  galivanika Boolean // Проходит обработку или нет (булевое)
+  termoplast Boolean // Проходит обработку или нет (булевое)
+  ypakovka   Boolean // Проходит обработку или нет (булевое)
 
   // Связи
   order Order @relation(fields: [orderId], references: [id])
@@ -73,7 +76,7 @@ model WorkDone {
 
 // Модель Заданий для участков
 model WorkstationTask {
-  id            Int                @id @default(autoincrement()) // Первичный ключ
+  id            Int        @id @default(autoincrement()) // Первичный ключ
   orderId       Int // Внешний ключ на заказы
   workstationId Int // Внешний ключ на участки
   completedAll  Int? // сколько сделано
@@ -81,6 +84,7 @@ model WorkstationTask {
   completedTask Boolean? // выполнено ли задание
   status        String? // Статус
   pd            String? // пд
+  dateComplite  DateTime? // Дата и время выполнения
   ostatok       Int? // остаток
   ostatokInpt   Int? // остаток для ввода
   workDone      WorkDone[] // Связь с таблицей Выполнение работы
@@ -95,30 +99,26 @@ model WorkstationTask {
 
 // Модель выполнения работы Покраска
 model WorkDonePokraska {
-  id                Int            @id @default(autoincrement()) // Первичный ключ
-  grinding1Fakt     Int? // Шлифовка 1
+  id            Int  @id @default(autoincrement()) // Первичный ключ
+  grinding1Fakt Int? // Шлифовка 1
 
-  ground1Fakt       Int? // Грунт 1
+  ground1Fakt Int? // Грунт 1
 
+  grinding2Fakt Int? // Шлифовка 2
 
-  grinding2Fakt     Int? // Шлифовка 2
+  ground2Fakt Int? // Грунт 2
 
-  ground2Fakt       Int? // Грунт 2
+  grinding3Fakt Int? // Шлифовка 3
 
+  ground3Fakt Int? // Грунт 3
 
-  grinding3Fakt     Int? // Шлифовка 3
-
-  ground3Fakt       Int? // Грунт 3
-
-
-  enamel            Int? // Эмаль
-  dateWork        DateTime? // Дата и время выполнения
+  enamel   Int? // Эмаль
+  dateWork DateTime? // Дата и время выполнения
 
   // Внешний ключ на задание участка
   workstationTaskId Int
   workstationTask   WorkstationTask @relation(fields: [workstationTaskId], references: [id])
 }
-
 
 // -------------------------------------------------------------
 // // Таблица линии

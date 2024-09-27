@@ -76,6 +76,14 @@ const Navbar1: React.FC = () => {
               Присадка
             </Link>
           </MenuItem>
+
+          <MenuItem onClick={handleMenuClose}>
+            <Link href="/pages/Металлокаркасы" passHref>
+            Металлокаркасы
+            </Link>
+          </MenuItem>
+
+          {/* создать Металлокаркас */}
           <MenuItem onClick={handleMenuClose}>
             <Link href="/pages/pokraska" passHref>
               Покраска
@@ -107,16 +115,17 @@ const Navbar1: React.FC = () => {
           color="inherit"
           onClick={(event) => handleMenuClick(event, 'finishing')}
         >
-          Метал
+          ХВА
         </Button>
         <Menu
           anchorEl={anchorEl}
           open={openMenu === 'finishing'}
           onClose={handleMenuClose}
         >
+          {/* Передалать в подготовку */}
           <MenuItem onClick={handleMenuClose}>
-            <Link href="/pages/Проволка" passHref>
-              Проволка
+            <Link href="/pages/Подготовка" passHref> 
+              Подготовка
             </Link>
           </MenuItem>
           <MenuItem onClick={handleMenuClose}>
@@ -141,7 +150,7 @@ const Navbar1: React.FC = () => {
           </MenuItem>
           <MenuItem onClick={handleMenuClose}>
             <Link href="/pages/Упаковка" passHref>
-              Упаковка
+              Упаковка крепеж
             </Link>
           </MenuItem>
         </Menu>

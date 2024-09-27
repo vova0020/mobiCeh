@@ -56,3 +56,20 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+
+
+
+
+
+1) Статус - 1. Ожидание (у всех 0)
+            2. В работе (хоть что то выполнено)
+            3. Завершен (среднее >99%)+
+2) Выполненые заказы (фильтр завершен или нет) по дефолу показывается и красится зеленым, потом галкой скрыть+
+3) ПД дата для раскроя и нестинга (вручную при загрузке заказа)+
+4) // Модель Заданий для участков добавить дату завершения заказа+
+5) В главном окне не показывается статус, завершен, выполнено %+
+6) В участках номер заказа неотображается +
+7) Статистика, по дефолту все участки
+8) при просрочке статус ставить красным
+

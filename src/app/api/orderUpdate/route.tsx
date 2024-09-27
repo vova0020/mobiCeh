@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
         const {id,orders, workStatuses} = await req.json();
         console.log(id);
         console.log(orders);
-        console.log(workStatuses);
+        // console.log(workStatuses);
         
         
             

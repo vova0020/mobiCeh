@@ -30,8 +30,20 @@ export default function TableWorkplace({ workData }: { workData: string }) {
     const [editableStatus, setEditableStatus] = useState(false);
     const [rows, setRows] = useState<OrderRow[]>([]);
 
+    const getRowClassName = (params) => {
+        const completionRate = parseFloat(params.row.completionRate.replace('%', ''));
+
+        if (completionRate > 0 && completionRate < 99) {
+            return 'cell-status-work'; // Класс для желтого цвета
+        } else if (completionRate >= 99) {
+            return 'cell-status-complete'; // Класс для зеленого цвета
+        }
+
+        return ''; // Без дополнительных стилей для остальных случаев
+    };
+
     const columns: GridColDef[] = [
-        { field: 'launchNumber', headerName: '№ запуска', editable: editableStatus, width: 70, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'id', headerName: '№ запуска', editable: editableStatus, width: 70, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         { field: 'actual', headerName: 'Актуальный', editable: editableStatus, width: 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         { field: 'orderName', headerName: 'Заказ', editable: editableStatus, width: 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         { field: 'article', headerName: 'Артикул', editable: editableStatus, width: 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
@@ -66,6 +78,8 @@ export default function TableWorkplace({ workData }: { workData: string }) {
                 status = 'Просрочен';
                 const diffTime = Math.abs(currentDate.getTime() - pdDate.getTime());
                 prosrok = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                console.log(prosrok);
+                
             }
         }
 
@@ -106,8 +120,8 @@ export default function TableWorkplace({ workData }: { workData: string }) {
 
                     const ostatok = order.quantity - totalWorkDone;
                     const completionRate = order.tasks[0]?.completedPros || 0;
-                    console.log(order.tasks[0].pd);
-                    
+                    // console.log(order.tasks[0].pd);
+
                     return {
                         ...order,
                         pd: order.tasks[0].pd,
@@ -138,37 +152,37 @@ export default function TableWorkplace({ workData }: { workData: string }) {
         return () => clearInterval(interval); // Очистка интервала при размонтировании компонента
     }, [workData]);
 
-   
-   
+
+
     const handleProcessRowUpdate = async (newRow: any) => {
         try {
             const { id, sdel, complete } = newRow;
             const ostatokInpt = newRow.tasks[0].ostatokInpt
-          
-           
-                if (sdel > ostatokInpt) { // Используем ostatokInpt вместо quantity
-                    alert(`Максимальное количество для выполнения сегодня: ${ostatokInpt}. Пожалуйста, обратитесь к менеджеру.`);
-                    throw new Error(`Превышение допустимого значения выполнения. Максимум для сегодняшнего дня: ${ostatokInpt}`);
-                }
-        
-    
+
+
+            if (sdel > ostatokInpt) { // Используем ostatokInpt вместо quantity
+                alert(`Максимальное количество для выполнения сегодня: ${ostatokInpt}. Пожалуйста, обратитесь к менеджеру.`);
+                throw new Error(`Превышение допустимого значения выполнения. Максимум для сегодняшнего дня: ${ostatokInpt}`);
+            }
+
+
             await axios.post('/api/workplace', {
                 orderId: id,
                 workstationName: workData,
                 doneToday: sdel
             });
-    
+
             fetchData();
-    
+
             return newRow;
         } catch (error) {
             console.error('Ошибка при обновлении данных:', error);
             throw new Error('Ошибка при обновлении данных');
         }
     };
-    
-    
-    
+
+
+
 
 
     const getCurrentDate2 = (): string => {
@@ -211,7 +225,7 @@ export default function TableWorkplace({ workData }: { workData: string }) {
                     localeText={ruRU.components.MuiDataGrid.defaultProps.localeText}
                     processRowUpdate={handleProcessRowUpdate}
                     onProcessRowUpdateError={(error) => console.error('Ошибка при обновлении строки:', error)}
-
+                    getRowClassName={getRowClassName}
                     sx={{
                         '& .super-app-theme--header': {
                             backgroundColor: '#bceaff',
@@ -230,17 +244,25 @@ export default function TableWorkplace({ workData }: { workData: string }) {
                             textAlign: 'center'
                         },
                         '& .cell-ostatok-zero': {
-                            backgroundColor: '#58ff1b',  // Синий цвет
+                            backgroundColor: '#58ff1b !important',  // Синий цвет
                             // pointerEvents: 'none',  // Делаем ячейку неактивной
                             opacity: 0.7,
                         },
                         '& .cell-ostatok-active': {
-                            backgroundColor: '#0000ff', // Зелёный цвет для активной ячейки
+                            backgroundColor: '#0000ff !important', // Зелёный цвет для активной ячейки
                         },
                         '& .cell-status-overdue': {
                             backgroundColor: 'red', // Красный цвет для статуса просрочен
-                            color: 'black', 
+                            color: 'black',
                             opacity: 0.9,// Белый текст для лучшей видимости
+                        },
+                        '& .cell-status-work': {
+                            backgroundColor: '#f9ff7e !important', // Зелёный цвет для активной ячейки
+                        },
+                        '& .cell-status-complete': {
+                            backgroundColor: '#5bfa22 !important', // Красный цвет для статуса просрочен
+                            // color: 'black', 
+                            // opacity: 0.9,// Белый текст для лучшей видимости
                         },
 
                     }}

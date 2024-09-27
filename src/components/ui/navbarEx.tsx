@@ -9,7 +9,7 @@ const NavbarEx: React.FC = () => {
   return (
     <AppBar position="static">
       <Toolbar>
-        <Link href="/" passHref>
+        <Link href="/pages/generalCeh" passHref>
           <Button color="inherit">Главная</Button>
         </Link>
               

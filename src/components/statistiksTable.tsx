@@ -54,6 +54,8 @@ export default function StatistikTable({ sektorsName }: { sektorsName: string })
             .then(response => {
                 const updatedRows = response.data.map((order: any) => {
                     // Инициализируем значения статусов
+                    
+                    
                     const statusMap: { [key: number]: string } = {
                         1: 'raskroiStat',
                         2: 'zerkaloStat',
@@ -83,7 +85,7 @@ export default function StatistikTable({ sektorsName }: { sektorsName: string })
                     order.tasks.forEach((task: any) => {
                         const statusKey = statusMap[task.workstationId];
                         if (statusKey) {
-                            statuses[statusKey] = task.completedPros; // Заполняем статус
+                            statuses[statusKey] = `${task.completedPros} %`; // Заполняем статус
                         }
                     });
 
