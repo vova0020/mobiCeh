@@ -1,3 +1,7 @@
+
+/* eslint-disable */
+
+
 import { PrismaClient } from '@prisma/client';
 // import { NextApiRequest, NextApiResponse } from 'next';
 const prisma = new PrismaClient();
@@ -18,7 +22,7 @@ export default class prismaInteraction {
             });
 
             // Логика для обновления статусов заказа, вычисления completionRate и isCompleted
-            orders.forEach(order => {
+            for (const order of orders) {
                 if (order.tasks.length > 0) {
                     let totalCompletedPros = 0;
                     let hasWorkInProgress = false;
@@ -49,17 +53,23 @@ export default class prismaInteraction {
                     order.completionRate = averageCompletedPros;
 
                     // Устанавливаем isCompleted в true, если completionRate > 99
-                    if (order.completionRate > 99) {
-                        order.isCompleted = true;
-                    } else {
-                        order.isCompleted = false;
-                    }
+                    order.isCompleted = order.completionRate > 99;
                 } else {
                     order.status = "Ожидание";  // Если нет заданий, то статус "Ожидание"
                     order.completionRate = 0;   // Если нет заданий, то completionRate = 0
                     order.isCompleted = false;  // Если нет заданий, то заказ не завершен
                 }
-            });
+
+                // Сохранение обновленных данных в базу
+                await prisma.order.update({
+                    where: { id: order.id },
+                    data: {
+                        status: order.status,
+                        completionRate: order.completionRate,
+                        isCompleted: order.isCompleted
+                    }
+                });
+            }
 
             return orders;
         } catch (error) {
@@ -68,8 +78,6 @@ export default class prismaInteraction {
             await prisma.$disconnect();
         }
     }
-
-
 
     // Метод для обновления заказа 
     async updateOrder(id: number, orders: any, workStatuses: any) {
@@ -118,6 +126,7 @@ export default class prismaInteraction {
                         pokraska: workStatuses.pokraska,
                         furnitura: workStatuses.furnitura,
                         setki: workStatuses.setki,
+                        guides: workStatuses.guides,
                         metal: workStatuses.metal,
                         konveer: workStatuses.konveer,
                         sborka: workStatuses.sborka,
@@ -138,28 +147,38 @@ export default class prismaInteraction {
             // Функция для обработки добавления или удаления заданий
             const handleTaskUpdate = async (workstationName: string, isActive: boolean, pd: Date) => {
                 const workstation = allWorkstations.find(ws => ws.name === workstationName);
-
+            
                 if (!workstation) return;
-
+            
                 const existingTask = await prisma.workstationTask.findFirst({
                     where: {
                         orderId: id,
                         workstationId: workstation.id,
                     },
                 });
-
-                if (isActive && !existingTask) {
-                    // Если участок активен, но задания нет, создаем его
-                    tasks.push({
-                        orderId: id,
-                        workstationId: workstation.id,
-                        ostatok: orders.quantity,
-                        ostatokInpt: orders.quantity,
-                        completedAll: 0,
-                        completedPros: 0,
-                        completedTask: false,
-                        pd: formatDate(pd), // Преобразуем дату в ISO-формат
-                    });
+            
+                if (isActive) {
+                    if (!existingTask) {
+                        // Если участок активен, но задания нет, создаем его
+                        tasks.push({
+                            orderId: id,
+                            workstationId: workstation.id,
+                            ostatok: orders.quantity,
+                            ostatokInpt: orders.quantity,
+                            completedAll: 0,
+                            completedPros: 0,
+                            completedTask: false,
+                            pd: formatDate(pd), // Преобразуем дату в ISO-формат
+                        });
+                    } else {
+                        // Если участок активен и задание уже существует, обновляем дату PD
+                        await prisma.workstationTask.update({
+                            where: { id: existingTask.id },
+                            data: {
+                                pd: formatDate(pd), // Обновляем дату PD
+                            },
+                        });
+                    }
                 } else if (!isActive && existingTask) {
                     // Если участок неактивен, а задание существует, удаляем его
                     await prisma.workstationTask.delete({
@@ -167,6 +186,7 @@ export default class prismaInteraction {
                     });
                 }
             };
+            
             // Функция для разбора даты из строки формата DD.MM.YYYY
             const parseDate = (dateString: string) => {
                 const parts = dateString.split('.');
@@ -187,7 +207,7 @@ export default class prismaInteraction {
             // console.log(orders);
             // console.log(orders.pdDateRaskroi);
             // console.log(orders.pdDateNesting);
-            
+
 
             // Преобразуем строки дат в объекты Date
             const receivedDate = parseDate(orders.receivedDate);
@@ -213,6 +233,9 @@ export default class prismaInteraction {
 
             const pdKonveerSetki = new Date(pdDate);
             pdKonveerSetki.setDate(pdKonveerSetki.getDate() - 3); // Смещение за 3 дня до PD
+
+            const pdGuides = new Date(pdDate);
+            pdGuides.setDate(pdGuides.getDate() - 3); // Смещение за 3 дня до PD
 
             const pdKonveerProvolka = new Date(pdDate);
             pdKonveerProvolka.setDate(pdKonveerProvolka.getDate() - 12); // Смещение за 12 дня до PD
@@ -247,6 +270,7 @@ export default class prismaInteraction {
             await handleTaskUpdate('Сборка', workStatuses.sborka, pdKonveerSborka);
 
             await handleTaskUpdate('Сетки', workStatuses.setki, pdKonveerSetki);
+            await handleTaskUpdate('Направляющие', workStatuses.guides, pdGuides);
             await handleTaskUpdate('Проволка', workStatuses.provolka, pdKonveerProvolka);
             await handleTaskUpdate('ХВА', workStatuses.xba, pdKonveerXba);
             await handleTaskUpdate('Мойка', workStatuses.moika, pdKonveerMoika);
@@ -268,7 +292,6 @@ export default class prismaInteraction {
             await prisma.$disconnect();
         }
     }
-
 
     // Добавление нового заказа
     async createOrder(data: {
@@ -297,6 +320,7 @@ export default class prismaInteraction {
         konveer: boolean;
         sborka: boolean;
         setki: boolean;
+        guides: boolean;
         metal: boolean;
         provolka: boolean;
         xba: boolean;
@@ -348,6 +372,9 @@ export default class prismaInteraction {
 
             const pdKonveerSetki = new Date(pdDate);
             pdKonveerSetki.setDate(pdKonveerSetki.getDate() - 3); // Смещение за 3 дня до PD
+            
+            const pdGuides = new Date(pdDate);
+            pdGuides.setDate(pdGuides.getDate() - 3); // Смещение за 3 дня до PD
 
             const pdKonveerProvolka = new Date(pdDate);
             pdKonveerProvolka.setDate(pdKonveerProvolka.getDate() - 12); // Смещение за 3 дня до PD
@@ -383,7 +410,7 @@ export default class prismaInteraction {
                     quantity: data.quantity,
                     pdDate: formatDate(pdDate),
                     pdDateRaskroi: formatDate(pdDateRaskroi),
-                    pdDateNesting: formatDate(pdDateNesting), 
+                    pdDateNesting: formatDate(pdDateNesting),
                     workStatuses: {
                         create: {
                             raskroi: data.raskroi,
@@ -397,6 +424,7 @@ export default class prismaInteraction {
                             sborka: data.sborka,
                             metal: data.metal,
                             setki: data.setki,
+                            guides: data.guides,
                             provolka: data.provolka,
                             xba: data.xba,
                             moika: data.moika,
@@ -442,6 +470,7 @@ export default class prismaInteraction {
             if (data.sborka) addTask('Сборка', pdKonveerSborka);
 
             if (data.setki) addTask('Сетки', pdKonveerSetki);
+            if (data.guides) addTask('Направляющие', pdGuides);
             if (data.provolka) addTask('Проволка', pdKonveerProvolka);
             if (data.xba) addTask('ХВА', pdKonveerXba);
             if (data.moika) addTask('Мойка', pdKonveerMoika);
@@ -476,6 +505,7 @@ export default class prismaInteraction {
             'Сборка': 'sborka',
             'Металлокаркасы': 'metal',
             'Сетки': 'setki',
+            'Направляющие': 'guides',
             'Подготовка': 'provolka',
             'ХВА': 'xba',
             'Мойка': 'moika',
@@ -593,11 +623,6 @@ export default class prismaInteraction {
             }
         }
     }
-
-
-
-
-
 
     async updateWorkDone(orderId: number, workstationName: string, doneToday: any) {
         console.log(doneToday);
@@ -912,9 +937,6 @@ export default class prismaInteraction {
         }
     }
 
-
-
-
     // Получение всех заказов с заданиями для каждого участка
     async getStatistics() {
         try {
@@ -928,6 +950,57 @@ export default class prismaInteraction {
                     },
                 },
             });
+
+            // Логика для обновления статусов заказа, вычисления completionRate и isCompleted
+            for (const order of orders) {
+                if (order.tasks.length > 0) {
+                    let totalCompletedPros = 0;
+                    let hasWorkInProgress = false;
+
+                    // Считаем общую сумму прогресса
+                    order.tasks.forEach(task => {
+                        const completedPros = task.completedPros || 0;
+                        totalCompletedPros += completedPros;
+
+                        // Если хотя бы одно задание имеет прогресс > 0, то статус "В работе"
+                        if (completedPros > 0) {
+                            hasWorkInProgress = true;
+                        }
+                    });
+
+                    const averageCompletedPros = totalCompletedPros / order.tasks.length;
+
+                    // Определяем статус заказа
+                    if (averageCompletedPros > 99) {
+                        order.status = "Завершен";
+                    } else if (hasWorkInProgress) {
+                        order.status = "В работе";
+                    } else {
+                        order.status = "Ожидание";
+                    }
+
+                    // Рассчитываем completionRate как среднее значение completedPros по всем участкам
+                    order.completionRate = averageCompletedPros;
+
+                    // Устанавливаем isCompleted в true, если completionRate > 99
+                    order.isCompleted = order.completionRate > 99;
+                } else {
+                    order.status = "Ожидание";  // Если нет заданий, то статус "Ожидание"
+                    order.completionRate = 0;   // Если нет заданий, то completionRate = 0
+                    order.isCompleted = false;  // Если нет заданий, то заказ не завершен
+                }
+
+                // Сохранение обновленных данных в базу
+                await prisma.order.update({
+                    where: { id: order.id },
+                    data: {
+                        status: order.status,
+                        completionRate: order.completionRate,
+                        isCompleted: order.isCompleted
+                    }
+                });
+            }
+
             return orders;
         } catch (error) {
             console.error('Ошибка при получении данных:', error);
@@ -936,7 +1009,58 @@ export default class prismaInteraction {
         }
     }
 
+    async createUser(data: { login: string; password: string; role: string; sector?: string | null; }) {
 
+        // Проверка, существует ли пользователь с таким логином
+        const existingUser = await prisma.users.findUnique({
+            where: { login: data.login }, // Проверяем по полю login
+        });
+
+        if (existingUser) {
+            throw new Error('USER_EXISTS'); // Меняем текст ошибки на ключевое значение
+        }
+
+        // Сохранение нового пользователя
+        const newUser = await prisma.users.create({
+            data: {
+                login: data.login, // Используем логин из переданных данных
+                password: data.password, // Используем хэшированный пароль
+                role: data.role, // Используем роль
+                sector: data.sector || null, // Если сектор не передан, сохраняем null
+            },
+        });
+
+        return newUser; // Возвращаем созданного пользователя
+    }
+
+    // prismaInteraction.ts
+    async findUserByLogin(login: string) {
+        return await prisma.users.findUnique({
+            where: { login },
+        });
+    }
+
+    // Метод для создания администратора, если его нет
+    async createAdminIfNotExists() {
+        const adminLogin = 'Admin';
+        const adminPassword = 'Admin311'; // Пароль администратора по умолчанию
+        const adminRole = 'Руководство'; // Роль администратора
+
+        const existingAdmin = await this.findUserByLogin(adminLogin);
+
+        if (!existingAdmin) {
+            console.log('Создаем учетную запись администратора...');
+            await this.createUser({
+                login: adminLogin,
+                password: adminPassword,
+                role: adminRole,
+                sector: null,
+            });
+            console.log('Учетная запись администратора создана.');
+        } else {
+            console.log('Учетная запись администратора уже существует.');
+        }
+    }
 }
 
 

@@ -20,8 +20,8 @@ model Order {
   nomenclature   String? // Номенклатура
   quantity       Int? // Количество
   pdDate         String? // ПД покупателя (дата)
-  pdDateRaskroi         String? // ПД покупателя (дата)
-  pdDateNesting         String? // ПД покупателя (дата)
+  pdDateRaskroi  String? // ПД покупателя (дата)
+  pdDateNesting  String? // ПД покупателя (дата)
 
   workStatuses OrderWorkstationStatus[] // Связь с таблицей Статусы участков
   tasks        WorkstationTask[] // Связь с заданиями для участков
@@ -50,6 +50,8 @@ model OrderWorkstationStatus {
   pokraska  Boolean // Проходит обработку или нет (булевое)
   furnitura Boolean // Проходит обработку или нет (булевое)
   setki     Boolean // Проходит обработку или нет (булевое)
+  guides    Boolean // Проходит обработку или нет (булевое)
+
   konveer   Boolean // Проходит обработку или нет (булевое)
   sborka    Boolean // Проходит обработку или нет (булевое)
 
@@ -118,6 +120,15 @@ model WorkDonePokraska {
   // Внешний ключ на задание участка
   workstationTaskId Int
   workstationTask   WorkstationTask @relation(fields: [workstationTaskId], references: [id])
+}
+
+model Users {
+  id       Int    @id @default(autoincrement()) // Первичный ключ
+  login    String @unique  // логин
+  password String // пароль
+  role     String // роль
+  sector     String? // участок работы
+  tocen     String? // токен
 }
 
 // -------------------------------------------------------------

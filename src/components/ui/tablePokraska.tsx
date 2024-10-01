@@ -1,4 +1,6 @@
 'use client'
+
+/* eslint-disable */
 import React, { useEffect, useState } from 'react'
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
@@ -146,7 +148,7 @@ export default function TablePokraska({ workData }: { workData: string }) {
     axios.get('/api/workplace', { params })
       .then(response => {
         const updatedRows = response.data.map((order: any) => {
-          const receivedDateParts = order.receivedDate.split('.');
+          const receivedDateParts = order.tasks[0].pd.split('.');
           const receivedDate = new Date(
             parseInt(receivedDateParts[2], 10),
             parseInt(receivedDateParts[1], 10) - 1,
@@ -197,8 +199,12 @@ export default function TablePokraska({ workData }: { workData: string }) {
             emalFakt: order.tasks[0]?.workDonePokraska[0]?.enamel,
           };
         });
+        const sortedOrders = updatedRows.sort((a, b) => a.id - b.id);
+        // setRows(sortedOrders);
 
-        setRows(updatedRows);
+        setRows(sortedOrders);
+
+        // setRows(updatedRows);
       })
       .catch(error => {
         console.error('Ошибка при загрузке данных:', error);
@@ -296,7 +302,7 @@ export default function TablePokraska({ workData }: { workData: string }) {
         </div>
       </div>
 
-      <Paper style={{ height: '400px', width: '100%', margin: '20px 0' }}>
+      <Paper style={{ height: '100%', width: '100%', margin: '20px 0' }}>
         <DataGrid
           rows={rows}
           columns={columns}
@@ -325,10 +331,17 @@ export default function TablePokraska({ workData }: { workData: string }) {
             '& .cell-ostatok-zero': {
               backgroundColor: '#58ff1b',  // Синий цвет
               // pointerEvents: 'none',  // Делаем ячейку неактивной
-              opacity: 0.7,
+              opacity: 0.4,
+              fontSize: 22,
+              fontWeight: 'bold',
+              color: 'black'
             },
             '& .cell-ostatok-active': {
               backgroundColor: '#0000ff', // Зелёный цвет для активной ячейки
+              // opacity: 0.7,
+              fontSize: 22,
+              fontWeight: 'bold',
+              color: 'black'
             },
             '& .cell-status-overdue': {
               backgroundColor: 'red', // Красный цвет для статуса просрочен

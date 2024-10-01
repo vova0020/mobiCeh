@@ -1,5 +1,6 @@
 import StatistikTable from '@/components/statistiksTable';
-import NavbarEx from '@/components/ui/navbarEx';
+import Navbar1 from '@/components/ui/navbar1';
+
 
 import React from 'react'
 
@@ -12,7 +13,7 @@ export default function Statistik() {
 
 
     return (
-        <div> <NavbarEx />
+        <div> <Navbar1 />
             
             <div>
                 <StatistikTable sektorsName={sektorsName1}/>

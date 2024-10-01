@@ -1,4 +1,6 @@
 'use client'
+
+/* eslint-disable */
 import React, { useEffect, useState } from 'react'
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
@@ -66,25 +68,32 @@ export default function TableWorkplace({ workData }: { workData: string }) {
     const getCurrentDate = (): Date => {
         return new Date();
     };
+    
+    
 
     const getStatus = (completionRate: number, pdDate: Date, currentDate: Date): { status: string, prosrok: number } => {
         let status = 'Невыполнен';
         let prosrok = 0;
-
+    console.log(pdDate);
+    
+        // Обнуляем время у обеих дат, чтобы считать только дни
+        const pdDateWithoutTime = new Date(pdDate.getFullYear(), pdDate.getMonth(), pdDate.getDate());
+        const currentDateWithoutTime = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+    
         if (completionRate > 99) {
             status = 'ОК';
         } else {
-            if (pdDate < currentDate) {
+            if (pdDateWithoutTime < currentDateWithoutTime) {
                 status = 'Просрочен';
-                const diffTime = Math.abs(currentDate.getTime() - pdDate.getTime());
-                prosrok = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                console.log(prosrok);
+                const diffTime = Math.abs(currentDateWithoutTime.getTime() - pdDateWithoutTime.getTime());
                 
+                prosrok = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             }
         }
-
+    
         return { status, prosrok };
     };
+    
 
     const fetchData = () => {
         const params = { work: workData };
@@ -92,13 +101,13 @@ export default function TableWorkplace({ workData }: { workData: string }) {
         axios.get('/api/workplace', { params })
             .then(response => {
                 const updatedRows = response.data.map((order: any) => {
-                    const receivedDateParts = order.receivedDate.split('.');
+                    const receivedDateParts = order.tasks[0].pd.split('.');
                     const receivedDate = new Date(
                         parseInt(receivedDateParts[2], 10),
                         parseInt(receivedDateParts[1], 10) - 1,
                         parseInt(receivedDateParts[0], 10)
                     );
-
+                    
                     const pdDate = new Date(receivedDate);
                     pdDate.setDate(pdDate.getDate() + 1);
 
@@ -136,8 +145,10 @@ export default function TableWorkplace({ workData }: { workData: string }) {
                         ostatokInpt: order.ostatokInpt,
                     };
                 });
+                const sortedOrders = updatedRows.sort((a, b) => a.id - b.id);
+                // setRows(sortedOrders);
 
-                setRows(updatedRows);
+                setRows(sortedOrders);
             })
             .catch(error => {
                 console.error('Ошибка при загрузке данных:', error);
@@ -217,11 +228,11 @@ export default function TableWorkplace({ workData }: { workData: string }) {
                 </div>
             </div>
 
-            <Paper style={{ height: '400px', width: '100%', margin: '20px 0' }}>
+            <Paper style={{ height: '100%', width: '100%', margin: '20px 0' }}>
                 <DataGrid
                     rows={rows}
                     columns={columns}
-                    pageSize={100}
+                    // pageSize={100}
                     localeText={ruRU.components.MuiDataGrid.defaultProps.localeText}
                     processRowUpdate={handleProcessRowUpdate}
                     onProcessRowUpdateError={(error) => console.error('Ошибка при обновлении строки:', error)}
@@ -246,10 +257,17 @@ export default function TableWorkplace({ workData }: { workData: string }) {
                         '& .cell-ostatok-zero': {
                             backgroundColor: '#58ff1b !important',  // Синий цвет
                             // pointerEvents: 'none',  // Делаем ячейку неактивной
-                            opacity: 0.7,
+                            opacity: 0.4,
+                            fontSize: 22,
+                            fontWeight: 'bold',
+                            color: 'black'
                         },
                         '& .cell-ostatok-active': {
                             backgroundColor: '#0000ff !important', // Зелёный цвет для активной ячейки
+                            // opacity: 0.7,
+                            fontSize: 22,
+                            fontWeight: 'bold',
+                            color: 'black'
                         },
                         '& .cell-status-overdue': {
                             backgroundColor: 'red', // Красный цвет для статуса просрочен

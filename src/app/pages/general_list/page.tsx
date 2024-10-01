@@ -5,8 +5,8 @@ import Paper from '@mui/material/Paper';
 import { ruRU } from '@mui/x-data-grid/locales/ruRU';
 import { Button, Checkbox, FormControlLabel } from '@mui/material';
 import axios from 'axios';
-import NavbarEx from '@/components/ui/navbarEx';
 import * as XLSX from 'xlsx';  // Импортируем библиотеку для работы с Excel
+import Navbar1 from '@/components/ui/navbar1';
 
 interface OrderRow {
     id: number;
@@ -32,6 +32,7 @@ interface OrderRow {
     quantity: number;
     pdDate: string;
     setki: boolean;
+    guides: boolean;
     metal: boolean;
     provolka: boolean;
     xba: boolean;
@@ -69,6 +70,7 @@ export default function GeneralList() {
     const [isEditing, setIsEditing] = useState(false); // Редактирование существующих строк
     const [isNewRowAdded, setIsNewRowAdded] = useState(false); // Новая строка добавлена
     const [showCompleted, setShowCompleted] = useState(false); 
+    
 
     // Получение данных при загрузке компонента
     useEffect(() => {
@@ -78,7 +80,7 @@ export default function GeneralList() {
                     ...order,
                     pdDateNesting: order.pdDateNesting === 'NaN.NaN.NaN' ? '' : order.pdDateNesting,
                     pdDateRaskroi: order.pdDateRaskroi === 'NaN.NaN.NaN' ? '' : order.pdDateRaskroi,
-                    completionRate: `${order.completionRate} %`,
+                    completionRate: `${Math.round(order.completionRate)} %`,
                     raskroi: order.workStatuses[0]?.raskroi || false,
                     nesting: order.workStatuses[0]?.nesting || false,
                     zerkala: order.workStatuses[0]?.zerkala || false,
@@ -89,6 +91,7 @@ export default function GeneralList() {
                     konveer: order.workStatuses[0]?.konveer || false,
                     sborka: order.workStatuses[0]?.sborka || false,
                     setki: order.workStatuses[0]?.setki || false,
+                    guides: order.workStatuses[0]?.guides || false,
                     metal: order.workStatuses[0]?.metal || false,
                     provolka: order.workStatuses[0]?.provolka || false,
                     xba: order.workStatuses[0]?.xba || false,
@@ -136,26 +139,31 @@ export default function GeneralList() {
                         quantity: row[4] || 0,
                         pdDate: formatDateFromExcel(row[5]),
                         raskroi: row[6]?.trim().toLowerCase() === 'да',
-                        nesting: row[7]?.trim().toLowerCase() === 'да',
-                        zerkala: row[8]?.trim().toLowerCase() === 'да',
-                        kromka: row[9]?.trim().toLowerCase() === 'да',
-                        prisadka: row[10]?.trim().toLowerCase() === 'да',
-                        metal: row[11]?.trim().toLowerCase() === 'да',
-                        pokraska: row[12]?.trim().toLowerCase() === 'да',
-                        furnitura: row[13]?.trim().toLowerCase() === 'да',
-                        konveer: row[14]?.trim().toLowerCase() === 'да',
-                        sborka: row[15]?.trim().toLowerCase() === 'да',
-                        setki: row[16]?.trim().toLowerCase() === 'да',
-                        provolka: row[17]?.trim().toLowerCase() === 'да',
-                        xba: row[18]?.trim().toLowerCase() === 'да',
-                        moika: row[19]?.trim().toLowerCase() === 'да',
-                        galivanika: row[20]?.trim().toLowerCase() === 'да',
-                        termoplast: row[21]?.trim().toLowerCase() === 'да',
-                        ypakovka: row[22]?.trim().toLowerCase() === 'да',
+                        pdDateRaskroi: formatDateFromExcel(row[7])|| '',
+                        nesting: row[8]?.trim().toLowerCase() === 'да',
+                        pdDateNesting: formatDateFromExcel(row[9])|| '',
+                        zerkala: row[10]?.trim().toLowerCase() === 'да',
+                        kromka: row[11]?.trim().toLowerCase() === 'да',
+                        prisadka: row[12]?.trim().toLowerCase() === 'да',
+                        metal: row[13]?.trim().toLowerCase() === 'да',
+                        pokraska: row[14]?.trim().toLowerCase() === 'да',
+                        furnitura: row[15]?.trim().toLowerCase() === 'да',
+                        konveer: row[16]?.trim().toLowerCase() === 'да',
+                        sborka: row[17]?.trim().toLowerCase() === 'да',
+                        setki: row[18]?.trim().toLowerCase() === 'да',
+                        provolka: row[19]?.trim().toLowerCase() === 'да',
+                        xba: row[20]?.trim().toLowerCase() === 'да',
+                        moika: row[21]?.trim().toLowerCase() === 'да',
+                        galivanika: row[22]?.trim().toLowerCase() === 'да',
+                        termoplast: row[23]?.trim().toLowerCase() === 'да',
+                        ypakovka: row[24]?.trim().toLowerCase() === 'да',
+                        guides: row[25]?.trim().toLowerCase() === 'да',
                     };
                 }
                 return null;
             }).filter(row => row !== null);
+            console.log(loadedRows);
+            
 
             setRows(prevRows => [...prevRows, ...loadedRows]);
             setNewRows(loadedRows);
@@ -191,6 +199,7 @@ export default function GeneralList() {
             quantity: 0,
             pdDate: '',
             setki: false,
+            guides: false,
             metal: false,
             provolka: false,
             xba: false,
@@ -266,12 +275,14 @@ export default function GeneralList() {
                     };
                     await axios.post('/api/createOrder', rowToSend);
                     console.log('Данные строки успешно сохранены');
+                    alert('Добавленные строки успешно сохранены');
                 })
             );
             setIsNewRowAdded(false); // Скрыть кнопку "Сохранить новую строку"
             setNewRows([]); // Очистить состояние новых строк после сохранения
         } catch (error) {
             console.error('Ошибка при сохранении новых строк:', error);
+            alert('Ошибка при сохранении новых строк:', error);
         }
     };
     // Сохранение изменений в существующих строках
@@ -311,6 +322,7 @@ export default function GeneralList() {
                                 konveer: row.konveer,
                                 sborka: row.sborka,
                                 setki: row.setki,
+                                guides: row.setki,
                                 metal: row.metal,
                                 provolka: row.provolka,
                                 xba: row.xba,
@@ -322,6 +334,7 @@ export default function GeneralList() {
                         };
                         await axios.post(`/api/orderUpdate`, rowToSend);
                         console.log(`Данные строки с id ${row.id} успешно обновлены`);
+                        alert(`Данные № Заказа ${row.id} успешно обновлены`);
                     }
                 })
             );
@@ -329,6 +342,7 @@ export default function GeneralList() {
             setEditedRowIds(new Set()); // Очистить состояние изменённых строк
         } catch (error) {
             console.error('Ошибка при сохранении изменений:', error);
+            alert('Ошибка при сохранении изменений:', error);
         }
     };
 
@@ -374,11 +388,12 @@ export default function GeneralList() {
         { field: 'galivanika', headerName: 'Гальваника', editable: true, type: 'boolean' },
         { field: 'termoplast', headerName: 'Термопласт', editable: true, type: 'boolean' },
         { field: 'ypakovka', headerName: 'Упаковка крепеж', editable: true, type: 'boolean' },
+        { field: 'guides', headerName: 'Направляющие', editable: true, type: 'boolean' },
     ];
 
     return (
-        <Paper sx={{ height: 400, width: '100%' }}>
-            <NavbarEx />
+        <Paper sx={{ height: '100%', width: '100%' }}>
+            <Navbar1 />
             <Button onClick={handleAddRow}>Добавить строку</Button>
             <Button component="label">
                 Загрузить Excel файл
