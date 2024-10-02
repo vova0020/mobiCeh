@@ -6,6 +6,7 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
 import { ruRU } from '@mui/x-data-grid/locales/ruRU';
 import axios from 'axios';
+import { Box } from '@mui/material';
 
 interface OrderRow {
     id: number;
@@ -31,6 +32,8 @@ export default function TableWorkplace({ workData }: { workData: string }) {
     const [completedData, setCompletedData] = useState(0)
     const [editableStatus, setEditableStatus] = useState(false);
     const [rows, setRows] = useState<OrderRow[]>([]);
+    const [columnState, setColumnState] = useState<any>({}); // Состояние для ширины колонок
+
 
     const getRowClassName = (params) => {
         const completionRate = parseFloat(params.row.completionRate.replace('%', ''));
@@ -45,21 +48,21 @@ export default function TableWorkplace({ workData }: { workData: string }) {
     };
 
     const columns: GridColDef[] = [
-        { field: 'id', headerName: '№ запуска', editable: editableStatus, width: 70, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-        { field: 'actual', headerName: 'Актуальный', editable: editableStatus, width: 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-        { field: 'orderName', headerName: 'Заказ', editable: editableStatus, width: 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-        { field: 'article', headerName: 'Артикул', editable: editableStatus, width: 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-        { field: 'nomenclature', headerName: 'Номенклатура', editable: editableStatus, width: 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-        { field: 'pd', headerName: 'ПД', editable: editableStatus, width: 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-        { field: 'quantity', headerName: 'План', editable: editableStatus, width: 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-        { field: 'complete', headerName: 'Выполнено', width: 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-        { field: 'ostatok', headerName: 'Остаток', width: 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-        { field: 'completionRate', headerName: 'Выполнено %', width: 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-        { field: 'status', headerName: 'Статус', width: 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', cellClassName: (params) => params.value === 'Просрочен' ? 'cell-status-overdue' : '', },
-        { field: 'prosrok', headerName: 'Дней просрочки', width: 130, editable: editableStatus, type: 'number', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-        { field: 'relevant', headerName: 'Актуальных', width: 130, editable: editableStatus, type: 'number', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'id', headerName: '№ запуска', editable: editableStatus, width: columnState['id'] || 70, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'actual', headerName: 'Актуальный', editable: editableStatus, width: columnState['actual'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'orderName', headerName: 'Заказ', editable: editableStatus, width: columnState['orderName'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'article', headerName: 'Артикул', editable: editableStatus, width: columnState['article'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'nomenclature', headerName: 'Номенклатура', editable: editableStatus, width: columnState['nomenclature'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'pd', headerName: 'ПД', editable: editableStatus, width: columnState['pd'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'quantity', headerName: 'План', editable: editableStatus, width: columnState['quantity'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'complete', headerName: 'Выполнено', width: columnState['complete'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'ostatok', headerName: 'Остаток', width: columnState['ostatok'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'completionRate', headerName: 'Выполнено %', width: columnState['completionRate'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'status', headerName: 'Статус', width: columnState['status'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', cellClassName: (params) => params.value === 'Просрочен' ? 'cell-status-overdue' : '', },
+        { field: 'prosrok', headerName: 'Дней просрочки', width: columnState['prosrok'] || 130, editable: editableStatus, type: 'number', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'relevant', headerName: 'Актуальных', width: columnState['relevant'] || 130, editable: editableStatus, type: 'number', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         {
-            field: 'sdel', headerName: 'Сделано', width: 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+            field: 'sdel', headerName: 'Сделано', width: columnState['sdel'] || 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
             cellClassName: (params) =>
                 params.row.ostatok === 0 ? 'cell-ostatok-zero' : 'cell-ostatok-active', headerClassName: 'super-app-theme--header'
         },
@@ -68,32 +71,32 @@ export default function TableWorkplace({ workData }: { workData: string }) {
     const getCurrentDate = (): Date => {
         return new Date();
     };
-    
-    
+
+
 
     const getStatus = (completionRate: number, pdDate: Date, currentDate: Date): { status: string, prosrok: number } => {
         let status = 'Невыполнен';
         let prosrok = 0;
-    console.log(pdDate);
-    
+        console.log(pdDate);
+
         // Обнуляем время у обеих дат, чтобы считать только дни
         const pdDateWithoutTime = new Date(pdDate.getFullYear(), pdDate.getMonth(), pdDate.getDate());
         const currentDateWithoutTime = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-    
+
         if (completionRate > 99) {
             status = 'ОК';
         } else {
             if (pdDateWithoutTime < currentDateWithoutTime) {
                 status = 'Просрочен';
                 const diffTime = Math.abs(currentDateWithoutTime.getTime() - pdDateWithoutTime.getTime());
-                
+
                 prosrok = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             }
         }
-    
+
         return { status, prosrok };
     };
-    
+
 
     const fetchData = () => {
         const params = { work: workData };
@@ -107,7 +110,7 @@ export default function TableWorkplace({ workData }: { workData: string }) {
                         parseInt(receivedDateParts[1], 10) - 1,
                         parseInt(receivedDateParts[0], 10)
                     );
-                    
+
                     const pdDate = new Date(receivedDate);
                     pdDate.setDate(pdDate.getDate() + 1);
 
@@ -158,7 +161,7 @@ export default function TableWorkplace({ workData }: { workData: string }) {
     useEffect(() => {
         fetchData(); // Первоначальная загрузка данных
 
-        const interval = setInterval(fetchData, 10000); // Обновление данных каждые 3 секунды
+        const interval = setInterval(fetchData, 5000); // Обновление данных каждые 3 секунды
 
         return () => clearInterval(interval); // Очистка интервала при размонтировании компонента
     }, [workData]);
@@ -205,6 +208,15 @@ export default function TableWorkplace({ workData }: { workData: string }) {
         return `${day}.${month}.${year}`;
     };
 
+
+    // Функция для обработки изменения ширины колонок
+    const handleColumnResize = (params) => {
+        setColumnState((prevState) => ({
+            ...prevState,
+            [params.colDef.field]: params.width,
+        }));
+    };
+
     return (
         <div>
             <div
@@ -229,62 +241,65 @@ export default function TableWorkplace({ workData }: { workData: string }) {
             </div>
 
             <Paper style={{ height: '100%', width: '100%', margin: '20px 0' }}>
-                <DataGrid
-                    rows={rows}
-                    columns={columns}
-                    // pageSize={100}
-                    localeText={ruRU.components.MuiDataGrid.defaultProps.localeText}
-                    processRowUpdate={handleProcessRowUpdate}
-                    onProcessRowUpdateError={(error) => console.error('Ошибка при обновлении строки:', error)}
-                    getRowClassName={getRowClassName}
-                    sx={{
-                        '& .super-app-theme--header': {
-                            backgroundColor: '#bceaff',
-                            fontWeight: 'bold',
-                            // color: '#333',
-                            border: '1px solid #ccc',
-                        },
-                        '& .cell-sdel': {
-                            backgroundColor: '#3e7afc',
-                            fontWeight: 'bold',
-                            fontSize: 16,
-                            // color: '#000',
-                        },
-                        '& .MuiDataGrid-cell': {
-                            border: '1px solid #ccc',
-                            textAlign: 'center'
-                        },
-                        '& .cell-ostatok-zero': {
-                            backgroundColor: '#58ff1b !important',  // Синий цвет
-                            // pointerEvents: 'none',  // Делаем ячейку неактивной
-                            opacity: 0.4,
-                            fontSize: 22,
-                            fontWeight: 'bold',
-                            color: 'black'
-                        },
-                        '& .cell-ostatok-active': {
-                            backgroundColor: '#0000ff !important', // Зелёный цвет для активной ячейки
-                            // opacity: 0.7,
-                            fontSize: 22,
-                            fontWeight: 'bold',
-                            color: 'black'
-                        },
-                        '& .cell-status-overdue': {
-                            backgroundColor: 'red', // Красный цвет для статуса просрочен
-                            color: 'black',
-                            opacity: 0.9,// Белый текст для лучшей видимости
-                        },
-                        '& .cell-status-work': {
-                            backgroundColor: '#f9ff7e !important', // Зелёный цвет для активной ячейки
-                        },
-                        '& .cell-status-complete': {
-                            backgroundColor: '#5bfa22 !important', // Красный цвет для статуса просрочен
-                            // color: 'black', 
-                            // opacity: 0.9,// Белый текст для лучшей видимости
-                        },
+                <Box sx={{ height: 'calc(100vh - 200px)', width: '100%', overflow: 'auto' }}>
+                    <DataGrid
+                        rows={rows}
+                        columns={columns}
+                        // pageSize={100}
+                        localeText={ruRU.components.MuiDataGrid.defaultProps.localeText}
+                        processRowUpdate={handleProcessRowUpdate}
+                        onProcessRowUpdateError={(error) => console.error('Ошибка при обновлении строки:', error)}
+                        getRowClassName={getRowClassName}
+                        onColumnWidthChange={handleColumnResize}
+                        sx={{
+                            '& .super-app-theme--header': {
+                                backgroundColor: '#bceaff',
+                                fontWeight: 'bold',
+                                // color: '#333',
+                                border: '1px solid #ccc',
+                            },
+                            '& .cell-sdel': {
+                                backgroundColor: '#3e7afc',
+                                fontWeight: 'bold',
+                                fontSize: 16,
+                                // color: '#000',
+                            },
+                            '& .MuiDataGrid-cell': {
+                                border: '1px solid #ccc',
+                                textAlign: 'center'
+                            },
+                            '& .cell-ostatok-zero': {
+                                backgroundColor: '#58ff1b !important',  // Зеленый цвет
+                                // pointerEvents: 'none',  // Делаем ячейку неактивной
+                                opacity: 0.4,
+                                fontSize: 22,
+                                fontWeight: 'bold',
+                                color: 'black'
+                            },
+                            '& .cell-ostatok-active': {
+                                backgroundColor: '#8a8adc !important', // Синий цвет для активной ячейки
+                                // opacity: 0.7,
+                                fontSize: 22,
+                                fontWeight: 'bold',
+                                color: 'black'
+                            },
+                            '& .cell-status-overdue': {
+                                backgroundColor: 'red', // Красный цвет для статуса просрочен
+                                color: 'black',
+                                opacity: 0.9,// Белый текст для лучшей видимости
+                            },
+                            '& .cell-status-work': {
+                                backgroundColor: '#f9ff7e !important', // Зелёный цвет для активной ячейки
+                            },
+                            '& .cell-status-complete': {
+                                backgroundColor: '#5bfa22 !important', // Красный цвет для статуса просрочен
+                                // color: 'black', 
+                                // opacity: 0.9,// Белый текст для лучшей видимости
+                            },
 
-                    }}
-                />
+                        }}
+                    />
+                </Box>
             </Paper>
         </div>
     );

@@ -30,7 +30,7 @@ type RegisterFormInputs = {
 
 export default function Register() {
     const sectors = ['Раскрой', 'Нестинг', 'Зеркала', 'Кромка', 'Присадка', 'Металлокаркасы', 'Покраска', 'Фурнитура', 'Конвеер', 'Сборка', 'Сетки', 'Проволка', 'ХВА', 'Мойка', 'Гальваника', 'Термопласт', 'Упаковка'];
-    const roles = ['Менеджер', 'Технолог', 'Мастер участка', 'Руководство'];
+    const roles = ['Менеджер', 'Технолог', 'Мастер участка', 'Руководство', 'Отдел продаж','Мастер Нестинг-Присадка', 'Мастер Кромки-Присадки', ' Мастер ХВА'];
 
     const { register, handleSubmit, formState: { errors }, watch, setValue, clearErrors, reset } = useForm<RegisterFormInputs>();
     const [showSector, setShowSector] = useState(false);

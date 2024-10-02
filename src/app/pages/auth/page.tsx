@@ -109,6 +109,14 @@ export default function Auth() {
                 router.push('/pages/general_list');
             } else if (decoded.role === 'Руководство') {
                 router.push('/pages/general_list');
+            }else if (decoded.role === 'Отдел продаж') {
+                router.push('/pages/statistik');
+            }else if (decoded.role === 'Мастер Нестинг-Присадка') {
+                router.push('/pages/Нестинг');
+            }else if (decoded.role === 'Мастер Кромки-Присадки') {
+                router.push('/pages/Кромка');
+            }else if (decoded.role === 'Мастер ХВА') {
+                router.push('/pages/Мойка');
             } else {
                 alert("Неизвестная роль");
             }

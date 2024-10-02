@@ -6,6 +6,7 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
 import { ruRU } from '@mui/x-data-grid/locales/ruRU';
 import axios from 'axios';
+import { Box } from '@mui/material';
 
 interface OrderRow {
   id: number;
@@ -38,81 +39,82 @@ export default function TablePokraska({ workData }: { workData: string }) {
   const [completedData, setCompletedData] = useState(0)
   const [editableStatus, setEditableStatus] = useState(false);
   const [rows, setRows] = useState<OrderRow[]>([]);
+  const [columnState, setColumnState] = useState<any>({}); // Состояние для ширины колонок
 
   const columns: GridColDef[] = [
-    { field: 'launchNumber', headerName: '№ запуска', editable: editableStatus, width: 70, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-    { field: 'actual', headerName: 'Актуальный', editable: editableStatus, width: 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-    { field: 'orderName', headerName: 'Заказ', editable: editableStatus, width: 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-    { field: 'article', headerName: 'Артикул', editable: editableStatus, width: 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-    { field: 'nomenclature', headerName: 'Номенклатура', editable: editableStatus, width: 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-    { field: 'pd', headerName: 'ПД', editable: editableStatus, width: 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-    { field: 'quantity', headerName: 'План', editable: editableStatus, width: 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-    { field: 'complete', headerName: 'Выполнено', width: 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-    { field: 'ostatok', headerName: 'Остаток', width: 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-    { field: 'completionRate', headerName: 'Выполнено %', width: 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-    { field: 'status', headerName: 'Статус', width: 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', cellClassName: (params) => params.value === 'Просрочен' ? 'cell-status-overdue' : '', },
-    { field: 'prosrok', headerName: 'Дней просрочки', width: 130, editable: editableStatus, type: 'number', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-    { field: 'relevant', headerName: 'Актуальных', width: 130, editable: editableStatus, type: 'number', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+    { field: 'id', headerName: '№ запуска', editable: editableStatus, width: columnState['id'] || 70, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+    { field: 'actual', headerName: 'Актуальный', editable: editableStatus, width: columnState['actual'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+    { field: 'orderName', headerName: 'Заказ', editable: editableStatus, width: columnState['orderName'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+    { field: 'article', headerName: 'Артикул', editable: editableStatus, width: columnState['article'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+    { field: 'nomenclature', headerName: 'Номенклатура', editable: editableStatus, width: columnState['nomenclature'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+    { field: 'pd', headerName: 'ПД', editable: editableStatus, width: columnState['pd'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+    { field: 'quantity', headerName: 'План', editable: editableStatus, width: columnState['quantity'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+    { field: 'complete', headerName: 'Выполнено', width: columnState['complete'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+    { field: 'ostatok', headerName: 'Остаток', width: columnState['ostatok'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+    { field: 'completionRate', headerName: 'Выполнено %', width: columnState['completionRate'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+    { field: 'status', headerName: 'Статус', width: columnState['status'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', cellClassName: (params) => params.value === 'Просрочен' ? 'cell-status-overdue' : '', },
+    { field: 'prosrok', headerName: 'Дней просрочки', width: columnState['prosrok'] || 130, editable: editableStatus, type: 'number', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+    { field: 'relevant', headerName: 'Актуальных', width: columnState['relevant'] || 130, editable: editableStatus, type: 'number', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
     {
-      field: 'shlif1Plan', headerName: 'Шлифовка 1 план', width: 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+      field: 'shlif1Plan', headerName: 'Шлифовка 1 план', width: columnState['shlif1Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       headerClassName: 'super-app-theme--header'
     },
     {
-      field: 'shlif1Fakt', headerName: 'Шлифовка 1 факт', width: 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+      field: 'shlif1Fakt', headerName: 'Шлифовка 1 факт', width: columnState['shlif1Fakt'] || 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       cellClassName: (params) =>
         params.row.ostatok === 0 ? 'cell-ostatok-zero' : 'cell-ostatok-active', headerClassName: 'super-app-theme--header'
     },
     {
-      field: 'grunt1Plan', headerName: 'Грунт 1 план', width: 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+      field: 'grunt1Plan', headerName: 'Грунт 1 план', width: columnState['grunt1Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       headerClassName: 'super-app-theme--header'
     },
     {
-      field: 'grunt1Fakt', headerName: 'Грунт 1 факт', width: 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+      field: 'grunt1Fakt', headerName: 'Грунт 1 факт', width: columnState['grunt1Fakt'] || 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       cellClassName: (params) =>
         params.row.ostatok === 0 ? 'cell-ostatok-zero' : 'cell-ostatok-active', headerClassName: 'super-app-theme--header'
     },
     {
-      field: 'shlif2Plan', headerName: 'Шлифовка 2 план', width: 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+      field: 'shlif2Plan', headerName: 'Шлифовка 2 план', width: columnState['shlif2Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       headerClassName: 'super-app-theme--header'
     },
     {
-      field: 'shlif2Fakt', headerName: 'Шлифовка 2 факт', width: 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+      field: 'shlif2Fakt', headerName: 'Шлифовка 2 факт', width: columnState['shlif2Fakt'] || 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       cellClassName: (params) =>
         params.row.ostatok === 0 ? 'cell-ostatok-zero' : 'cell-ostatok-active', headerClassName: 'super-app-theme--header'
     },
     {
-      field: 'grunt2Plan', headerName: 'Грунт 2 план', width: 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+      field: 'grunt2Plan', headerName: 'Грунт 2 план', width: columnState['grunt2Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       headerClassName: 'super-app-theme--header'
     },
     {
-      field: 'grunt2Fakt', headerName: 'Грунт 2 факт', width: 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+      field: 'grunt2Fakt', headerName: 'Грунт 2 факт', width: columnState['grunt2Fakt'] || 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       cellClassName: (params) =>
         params.row.ostatok === 0 ? 'cell-ostatok-zero' : 'cell-ostatok-active', headerClassName: 'super-app-theme--header'
     },
     {
-      field: 'shlif3Plan', headerName: 'Шлифовка 3 план', width: 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+      field: 'shlif3Plan', headerName: 'Шлифовка 3 план', width: columnState['shlif3Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       headerClassName: 'super-app-theme--header'
     },
     {
-      field: 'shlif3Fakt', headerName: 'Шлифовка 3факт', width: 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+      field: 'shlif3Fakt', headerName: 'Шлифовка 3факт', width: columnState['shlif3Fakt'] || 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       cellClassName: (params) =>
         params.row.ostatok === 0 ? 'cell-ostatok-zero' : 'cell-ostatok-active', headerClassName: 'super-app-theme--header'
     },
     {
-      field: 'grunt3Plan', headerName: 'Грунт 3 план', width: 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+      field: 'grunt3Plan', headerName: 'Грунт 3 план', width: columnState['grunt3Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       headerClassName: 'super-app-theme--header'
     },
     {
-      field: 'grunt3Fakt', headerName: 'Грунт 3 факт', width: 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+      field: 'grunt3Fakt', headerName: 'Грунт 3 факт', width: columnState['grunt3Fakt'] || 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       cellClassName: (params) =>
         params.row.ostatok === 0 ? 'cell-ostatok-zero' : 'cell-ostatok-active', headerClassName: 'super-app-theme--header'
     },
     {
-      field: 'emalPlan', headerName: 'Эмаль план', width: 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+      field: 'emalPlan', headerName: 'Эмаль план', width: columnState['emalPlan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       headerClassName: 'super-app-theme--header'
     },
     {
-      field: 'emalFakt', headerName: 'Эмаль факт', width: 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+      field: 'emalFakt', headerName: 'Эмаль факт', width: columnState['emalFakt'] || 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       cellClassName: (params) =>
         params.row.ostatok === 0 ? 'cell-ostatok-zero' : 'cell-ostatok-active', headerClassName: 'super-app-theme--header'
     },
@@ -266,10 +268,6 @@ export default function TablePokraska({ workData }: { workData: string }) {
     }
   };
 
-
-
-
-
   const getCurrentDate2 = (): string => {
     const today = new Date();
     const year = today.getFullYear();
@@ -277,6 +275,15 @@ export default function TablePokraska({ workData }: { workData: string }) {
     const day = String(today.getDate()).padStart(2, '0');
 
     return `${day}.${month}.${year}`;
+  };
+
+
+  // Функция для обработки изменения ширины колонок
+  const handleColumnResize = (params) => {
+    setColumnState((prevState) => ({
+      ...prevState,
+      [params.colDef.field]: params.width,
+    }));
   };
 
   return (
@@ -303,54 +310,57 @@ export default function TablePokraska({ workData }: { workData: string }) {
       </div>
 
       <Paper style={{ height: '100%', width: '100%', margin: '20px 0' }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          pageSize={100}
-          localeText={ruRU.components.MuiDataGrid.defaultProps.localeText}
-          processRowUpdate={handleProcessRowUpdate}
-          onProcessRowUpdateError={(error) => console.error('Ошибка при обновлении строки:', error)}
+        <Box sx={{ height: 'calc(100vh - 200px)', width: '100%', overflow: 'auto' }}>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            pageSize={100}
+            localeText={ruRU.components.MuiDataGrid.defaultProps.localeText}
+            processRowUpdate={handleProcessRowUpdate}
+            onProcessRowUpdateError={(error) => console.error('Ошибка при обновлении строки:', error)}
+            onColumnWidthChange={handleColumnResize}
 
-          sx={{
-            '& .super-app-theme--header': {
-              backgroundColor: '#bceaff',
-              fontWeight: 'bold',
-              // color: '#333',
-              border: '1px solid #ccc',
-            },
-            '& .cell-sdel': {
-              backgroundColor: '#3e7afc',
-              fontWeight: 'bold',
-              fontSize: 16,
-              // color: '#000',
-            },
-            '& .MuiDataGrid-cell': {
-              border: '1px solid #ccc',
-              textAlign: 'center'
-            },
-            '& .cell-ostatok-zero': {
-              backgroundColor: '#58ff1b',  // Синий цвет
-              // pointerEvents: 'none',  // Делаем ячейку неактивной
-              opacity: 0.4,
-              fontSize: 22,
-              fontWeight: 'bold',
-              color: 'black'
-            },
-            '& .cell-ostatok-active': {
-              backgroundColor: '#0000ff', // Зелёный цвет для активной ячейки
-              // opacity: 0.7,
-              fontSize: 22,
-              fontWeight: 'bold',
-              color: 'black'
-            },
-            '& .cell-status-overdue': {
-              backgroundColor: 'red', // Красный цвет для статуса просрочен
-              color: 'black',
-              opacity: 0.9,// Белый текст для лучшей видимости
-            },
+            sx={{
+              '& .super-app-theme--header': {
+                backgroundColor: '#bceaff',
+                fontWeight: 'bold',
+                // color: '#333',
+                border: '1px solid #ccc',
+              },
+              '& .cell-sdel': {
+                backgroundColor: '#3e7afc',
+                fontWeight: 'bold',
+                fontSize: 16,
+                // color: '#000',
+              },
+              '& .MuiDataGrid-cell': {
+                border: '1px solid #ccc',
+                textAlign: 'center'
+              },
+              '& .cell-ostatok-zero': {
+                backgroundColor: '#58ff1b',  // Зеленый цвет
+                // pointerEvents: 'none',  // Делаем ячейку неактивной
+                opacity: 0.4,
+                fontSize: 22,
+                fontWeight: 'bold',
+                color: 'black'
+              },
+              '& .cell-ostatok-active': {
+                backgroundColor: '##8a8adc', // Синий цвет для активной ячейки
+                // opacity: 0.7,
+                fontSize: 22,
+                fontWeight: 'bold',
+                color: 'black'
+              },
+              '& .cell-status-overdue': {
+                backgroundColor: 'red', // Красный цвет для статуса просрочен
+                color: 'black',
+                opacity: 0.9,// Белый текст для лучшей видимости
+              },
 
-          }}
-        />
+            }}
+          />
+        </Box>
       </Paper>
     </div>
   );

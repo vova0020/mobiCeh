@@ -1,9 +1,10 @@
 'use client';
+/* eslint-disable */
 import React, { useState, useEffect } from 'react';
 import { DataGrid, GridColDef, GridFilterModel, GridLogicOperator, GridRowModel } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
 import { ruRU } from '@mui/x-data-grid/locales/ruRU';
-import { Button, Checkbox, FormControlLabel } from '@mui/material';
+import { Box, Button, Checkbox, FormControlLabel } from '@mui/material';
 import axios from 'axios';
 import * as XLSX from 'xlsx';  // Импортируем библиотеку для работы с Excel
 import Navbar1 from '@/components/ui/navbar1';
@@ -70,6 +71,7 @@ export default function GeneralList() {
     const [isEditing, setIsEditing] = useState(false); // Редактирование существующих строк
     const [isNewRowAdded, setIsNewRowAdded] = useState(false); // Новая строка добавлена
     const [showCompleted, setShowCompleted] = useState(false); 
+    const [columnState, setColumnState] = useState<any>({}); // Состояние для ширины колонок
     
 
     // Получение данных при загрузке компонента
@@ -359,40 +361,48 @@ export default function GeneralList() {
         }
     };
     const columns: GridColDef[] = [
-        { field: 'id', headerName: '№ запуска', editable: true, width: 70 },
-        { field: 'orderName', headerName: 'Наименование заказа', editable: true, width: 150 },
-        { field: 'article', headerName: 'Артикул', editable: true, width: 100 },
-        { field: 'receivedDate', headerName: 'Дата получения', editable: true, width: 130 },
-        { field: 'status', headerName: 'Статус', editable: true, width: 90 },
-        { field: 'isCompleted', headerName: 'Завершен', editable: true, type: 'boolean', width: 80 },
-        { field: 'completionRate', headerName: '% Выполнения', editable: true, type: 'number', width: 130 },
-        { field: 'nomenclature', headerName: 'Номенклатура', editable: true, width: 150 },
-        { field: 'quantity', headerName: 'Количество', editable: true, type: 'number', width: 90 },
-        { field: 'pdDate', headerName: 'План. дата', editable: true, width: 130 },
-        { field: 'raskroi', headerName: 'Раскрой', editable: true, type: 'boolean' },
-        { field: 'pdDateRaskroi', headerName: 'Пд для Раскроя', editable: true, },
-        { field: 'nesting', headerName: 'Нестинг', editable: true, type: 'boolean' },
-        { field: 'pdDateNesting', headerName: 'Пд для Нестинга', editable: true, },
-        { field: 'zerkala', headerName: 'Зеркала', editable: true, type: 'boolean' },
-        { field: 'kromka', headerName: 'Кромка', editable: true, type: 'boolean' },
-        { field: 'prisadka', headerName: 'Присадка', editable: true, type: 'boolean' },
-        { field: 'metal', headerName: 'Металлокаркасы', editable: true, type: 'boolean' },
-        { field: 'pokraska', headerName: 'Покраска', editable: true, type: 'boolean' },
-        { field: 'furnitura', headerName: 'Фурнитура', editable: true, type: 'boolean' },
-        { field: 'konveer', headerName: 'Конвейер', editable: true, type: 'boolean' },
-        { field: 'sborka', headerName: 'Сборка', editable: true, type: 'boolean' },
-        { field: 'setki', headerName: 'Сетки', editable: true, type: 'boolean' },
-        { field: 'provolka', headerName: 'Подготовка', editable: true, type: 'boolean' },
-        { field: 'xba', headerName: 'ХВА', editable: true, type: 'boolean' },
-        { field: 'moika', headerName: 'Мойка', editable: true, type: 'boolean' },
-        { field: 'galivanika', headerName: 'Гальваника', editable: true, type: 'boolean' },
-        { field: 'termoplast', headerName: 'Термопласт', editable: true, type: 'boolean' },
-        { field: 'ypakovka', headerName: 'Упаковка крепеж', editable: true, type: 'boolean' },
-        { field: 'guides', headerName: 'Направляющие', editable: true, type: 'boolean' },
+        { field: 'id', headerName: '№ запуска', editable: true, width: columnState['id'] ||  70 },
+        { field: 'orderName', headerName: 'Наименование заказа', editable: true, width: columnState['orderName'] ||  150 },
+        { field: 'article', headerName: 'Артикул', editable: true, width: columnState['article'] ||  100 },
+        { field: 'receivedDate', headerName: 'Дата получения', editable: true, width: columnState['receivedDate'] ||  130 },
+        { field: 'status', headerName: 'Статус', editable: true, width: columnState['status'] ||  90 },
+        { field: 'isCompleted', headerName: 'Завершен', editable: true, type: 'boolean', width: columnState['isCompleted'] ||  80 },
+        { field: 'completionRate', headerName: '% Выполнения', editable: true, type: 'number', width: columnState['completionRate'] ||  130 },
+        { field: 'nomenclature', headerName: 'Номенклатура', editable: true, width: columnState['nomenclature'] ||  150 },
+        { field: 'quantity', headerName: 'Количество', editable: true, type: 'number', width: columnState['quantity'] ||  90 },
+        { field: 'pdDate', headerName: 'План. дата', editable: true, width: columnState['pdDate'] ||  130 },
+        { field: 'raskroi', headerName: 'Раскрой', editable: true, type: 'boolean', width: columnState['raskroi'] ||  130 },
+        { field: 'pdDateRaskroi', headerName: 'Пд для Раскроя', editable: true, type: 'boolean', width: columnState['pdDateRaskroi'] ||  130 },
+        { field: 'nesting', headerName: 'Нестинг', editable: true, type: 'boolean', width: columnState['nesting'] ||  130 },
+        { field: 'pdDateNesting', headerName: 'Пд для Нестинга', editable: true, type: 'boolean', width: columnState['pdDateNesting'] ||  130},
+        { field: 'zerkala', headerName: 'Зеркала', editable: true, type: 'boolean', width: columnState['zerkala'] ||  130},
+        { field: 'kromka', headerName: 'Кромка', editable: true, type: 'boolean', width: columnState['kromka'] ||  130 },
+        { field: 'prisadka', headerName: 'Присадка', editable: true, type: 'boolean', width: columnState['prisadka'] ||  130 },
+        { field: 'metal', headerName: 'Металлокаркасы', editable: true, type: 'boolean', width: columnState['metal'] ||  130 },
+        { field: 'pokraska', headerName: 'Покраска', editable: true, type: 'boolean' , width: columnState['pokraska'] ||  130},
+        { field: 'furnitura', headerName: 'Фурнитура', editable: true, type: 'boolean', width: columnState['furnitura'] ||  130},
+        { field: 'konveer', headerName: 'Конвейер', editable: true, type: 'boolean', width: columnState['konveer'] ||  130 },
+        { field: 'sborka', headerName: 'Сборка', editable: true, type: 'boolean' , width: columnState['sborka'] ||  130},
+        { field: 'setki', headerName: 'Сетки', editable: true, type: 'boolean', width: columnState['setki'] ||  130 },
+        { field: 'provolka', headerName: 'Подготовка', editable: true, type: 'boolean', width: columnState['provolka'] ||  130 },
+        { field: 'xba', headerName: 'ХВА', editable: true, type: 'boolean', width: columnState['xba'] ||  130 },
+        { field: 'moika', headerName: 'Мойка', editable: true, type: 'boolean', width: columnState['moika'] ||  130 },
+        { field: 'galivanika', headerName: 'Гальваника', editable: true, type: 'boolean', width: columnState['galivanika'] ||  130 },
+        { field: 'termoplast', headerName: 'Термопласт', editable: true, type: 'boolean', width: columnState['termoplast'] ||  130 },
+        { field: 'ypakovka', headerName: 'Упаковка крепеж', editable: true, type: 'boolean', width: columnState['ypakovka'] ||  130 },
+        { field: 'guides', headerName: 'Направляющие', editable: true, type: 'boolean', width: columnState['guides'] ||  130 },
     ];
 
+    // Функция для обработки изменения ширины колонок
+    const handleColumnResize = (params) => {
+        setColumnState((prevState) => ({
+            ...prevState,
+            [params.colDef.field]: params.width,
+        }));
+    };
+
     return (
-        <Paper sx={{ height: '100%', width: '100%' }}>
+        <Paper sx={{ height: '100%', width: '100%', overflow: 'hidden' }}>
             <Navbar1 />
             <Button onClick={handleAddRow}>Добавить строку</Button>
             <Button component="label">
@@ -405,30 +415,30 @@ export default function GeneralList() {
                 control={<Checkbox checked={showCompleted} onChange={() => setShowCompleted(!showCompleted)} />}
                 label="Показать только незавершенные"
             />
-            <DataGrid
-                rows={filteredRows}
-                columns={columns}
-                filterModel={filterModel}
-                onFilterModelChange={setFilterModel}
-                pageSize={5}
-                rowsPerPageOptions={[5]}
-                localeText={ruRU.components.MuiDataGrid.defaultProps.localeText}
-                experimentalFeatures={{ newEditingApi: true }}
-                processRowUpdate={handleRowEdit}
-                getRowClassName={getRowClassName}
-                sx={{
-
-                    '& .cell-status-work': {
-                        backgroundColor: '#f9ff7e !important', // Зелёный цвет для активной ячейки
-                    },
-                    '& .cell-status-complete': {
-                        backgroundColor: '#5bfa22 !important', // Красный цвет для статуса просрочен
-                        // color: 'black', 
-                        // opacity: 0.9,// Белый текст для лучшей видимости
-                    },
-
-                }}
-            />
+            <Box sx={{ height: 'calc(110vh - 200px)', width: '100%', overflow: 'auto' }}>
+                <DataGrid
+                    rows={filteredRows}
+                    columns={columns}
+                    filterModel={filterModel}
+                    onFilterModelChange={setFilterModel}
+                    pageSize={5}
+                    rowsPerPageOptions={[5]}
+                    localeText={ruRU.components.MuiDataGrid.defaultProps.localeText}
+                    experimentalFeatures={{ newEditingApi: true }}
+                    processRowUpdate={handleRowEdit}
+                    getRowClassName={getRowClassName}
+                    onColumnWidthChange={handleColumnResize}
+                    sx={{
+                        '& .cell-status-work': {
+                            backgroundColor: '#f9ff7e !important',
+                        },
+                        '& .cell-status-complete': {
+                            backgroundColor: '#5bfa22 !important',
+                        },
+                    }}
+                />
+            </Box>
         </Paper>
     );
+    
 }

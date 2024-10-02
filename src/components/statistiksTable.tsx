@@ -1,7 +1,7 @@
 'use client'
 
 /* eslint-disable */
-import { Paper } from '@mui/material'
+import { Box, Paper } from '@mui/material'
 import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import { ruRU } from '@mui/x-data-grid/locales/ruRU';
 import axios from 'axios';
@@ -58,6 +58,8 @@ export default function StatistikTable({ sektorsName }: { sektorsName: string })
 
     const [rows, setRows] = useState<OrderRow[]>([]);
     const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number; value: number | null; quantity: number | null } | null>(null);
+    const [columnState, setColumnState] = useState<any>({}); // Состояние для ширины колонок
+
 
     const handleContextMenu = (event: React.MouseEvent, value: number, quantity: number) => {
         event.preventDefault();
@@ -75,124 +77,158 @@ export default function StatistikTable({ sektorsName }: { sektorsName: string })
 
 
     const columns: GridColDef[] = [
-        { field: 'launchNumber', headerName: '№ запуска', editable: true, width: 70, filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
-        { field: 'orderName', headerName: 'Заказ', editable: true, width: 130, filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
-        { field: 'nomenclature', headerName: 'Номенклатура', editable: true, width: 130, filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
-        { field: 'quantity', headerName: 'Количество', editable: false, width: 130, type: 'number', filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
-        { field: 'pdDate', headerName: 'ПД', editable: false, width: 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-        { field: 'status', headerName: 'Статус', editable: true, width: 90, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-        { field: 'isCompleted', headerName: 'Завершен', editable: true, type: 'boolean', width: 80, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-        { field: 'completionRate', headerName: '% Выполнения', editable: true, type: 'number', width: 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'launchNumber', headerName: '№ запуска', editable: true, width: columnState['launchNumber'] || 70, filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
+        { field: 'orderName', headerName: 'Заказ', editable: true, width: columnState['orderName'] || 130, filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
+        { field: 'nomenclature', headerName: 'Номенклатура', editable: true, width: columnState['nomenclature'] || 130, filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
+        { field: 'quantity', headerName: 'Количество', editable: false, width: columnState['quantity'] || 130, type: 'number', filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
+        { field: 'pdDate', headerName: 'ПД', editable: false, width: columnState['pdDate'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'status', headerName: 'Статус', editable: true, width: columnState['status'] || 90, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'isCompleted', headerName: 'Завершен', editable: true, type: 'boolean', width: columnState['isCompleted'] || 80, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'completionRate', headerName: '% Выполнения', editable: true, type: 'number', width: columnState['completionRate'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         {
-            field: 'raskroiStat', headerName: 'Раскрой', width: 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
+            field: 'raskroiStat', headerName: 'Раскрой', width: columnState['raskroiStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
                 <div onContextMenu={(event) => handleContextMenu(event, params.row.raskroiCompl, params.row.quantity)}>
                     {params.value}
                     {params.quantity}
                 </div>
             ),
         },
-        { field: 'zerkaloStat', headerName: 'Зеркала', width: 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center',renderCell: (params) => (
-            <div onContextMenu={(event) => handleContextMenu(event, params.row.zerkaloCompl, params.row.quantity)}>
-                {params.value}
-                {params.quantity}
-            </div>
-        ), },
-        { field: 'nestingStat', headerName: 'Нестинг', width: 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center',renderCell: (params) => (
+        {
+            field: 'zerkaloStat', headerName: 'Зеркала', width: columnState['zerkaloStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.zerkaloCompl, params.row.quantity)}>
+                    {params.value}
+                    {params.quantity}
+                </div>
+            ),
+        },
+        {
+            field: 'nestingStat', headerName: 'Нестинг', width: columnState['nestingStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
                 <div onContextMenu={(event) => handleContextMenu(event, params.row.nestingCompl, params.row.quantity)}>
                     {params.value}
                     {params.quantity}
                 </div>
-            ), },
-        { field: 'kromkaStat', headerName: 'Кромка', width: 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center',renderCell: (params) => (
+            ),
+        },
+        {
+            field: 'kromkaStat', headerName: 'Кромка', width: columnState['kromkaStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
                 <div onContextMenu={(event) => handleContextMenu(event, params.row.kromkaCompl, params.row.quantity)}>
                     {params.value}
                     {params.quantity}
                 </div>
-            ), },
-        { field: 'prisadkaStat', headerName: 'Присадка', width: 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center',renderCell: (params) => (
+            ),
+        },
+        {
+            field: 'prisadkaStat', headerName: 'Присадка', width: columnState['prisadkaStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
                 <div onContextMenu={(event) => handleContextMenu(event, params.row.prisadkaCompl, params.row.quantity)}>
                     {params.value}
                     {params.quantity}
                 </div>
-            ), },
-        { field: 'metalStat', headerName: 'Металлокаркасы', editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center',renderCell: (params) => (
+            ),
+        },
+        {
+            field: 'metalStat', headerName: 'Металлокаркасы', width: columnState['metalStat'] || 130, editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
                 <div onContextMenu={(event) => handleContextMenu(event, params.row.pokraskaCompl, params.row.quantity)}>
                     {params.value}
                     {params.quantity}
                 </div>
-            ), },
-        { field: 'pokraskaStat', headerName: 'Покраска', width: 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center',renderCell: (params) => (
+            ),
+        },
+        {
+            field: 'pokraskaStat', headerName: 'Покраска', width: columnState['pokraskaStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
                 <div onContextMenu={(event) => handleContextMenu(event, params.row.furnituraCompl, params.row.quantity)}>
                     {params.value}
                     {params.quantity}
                 </div>
-            ), },
-        { field: 'furnituraStat', headerName: 'Фурнитура', width: 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center',renderCell: (params) => (
+            ),
+        },
+        {
+            field: 'furnituraStat', headerName: 'Фурнитура', width: columnState['furnituraStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
                 <div onContextMenu={(event) => handleContextMenu(event, params.row.konveerCompl, params.row.quantity)}>
                     {params.value}
                     {params.quantity}
                 </div>
-            ), },
-        { field: 'konveerStat', headerName: 'Конвеер', width: 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center',renderCell: (params) => (
+            ),
+        },
+        {
+            field: 'konveerStat', headerName: 'Конвеер', width: columnState['konveerStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
                 <div onContextMenu={(event) => handleContextMenu(event, params.row.sborkaCompl, params.row.quantity)}>
                     {params.value}
                     {params.quantity}
                 </div>
-            ), },
-        { field: 'sborkaStat', headerName: 'Сборка', width: 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center',renderCell: (params) => (
+            ),
+        },
+        {
+            field: 'sborkaStat', headerName: 'Сборка', width: columnState['sborkaStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
                 <div onContextMenu={(event) => handleContextMenu(event, params.row.metalCompl, params.row.quantity)}>
                     {params.value}
                     {params.quantity}
                 </div>
-            ), },
-        { field: 'setkiStat', headerName: 'Сетки', editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center',renderCell: (params) => (
+            ),
+        },
+        {
+            field: 'setkiStat', headerName: 'Сетки', width: columnState['setkiStat'] || 130, editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
                 <div onContextMenu={(event) => handleContextMenu(event, params.row.setkiCompl, params.row.quantity)}>
                     {params.value}
                     {params.quantity}
                 </div>
-            ), },
-        { field: 'provolkaStat', headerName: 'Подготовка', editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center',renderCell: (params) => (
+            ),
+        },
+        {
+            field: 'provolkaStat', headerName: 'Подготовка', width: columnState['provolkaStat'] || 130, editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
                 <div onContextMenu={(event) => handleContextMenu(event, params.row.provolkaCompl, params.row.quantity)}>
                     {params.value}
                     {params.quantity}
                 </div>
-            ), },
-        { field: 'hvaStat', headerName: 'ХВА', editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center',renderCell: (params) => (
+            ),
+        },
+        {
+            field: 'hvaStat', headerName: 'ХВА', width: columnState['hvaStat'] || 130, editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
                 <div onContextMenu={(event) => handleContextMenu(event, params.row.hvaCompl, params.row.quantity)}>
                     {params.value}
                     {params.quantity}
                 </div>
-            ), },
-        { field: 'moikaStat', headerName: 'Мойка', editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center',renderCell: (params) => (
+            ),
+        },
+        {
+            field: 'moikaStat', headerName: 'Мойка', width: columnState['moikaStat'] || 130, editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
                 <div onContextMenu={(event) => handleContextMenu(event, params.row.moikaCompl, params.row.quantity)}>
                     {params.value}
                     {params.quantity}
                 </div>
-            ), },
-        { field: 'galvanikaStat', headerName: 'Гальваника', editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center',renderCell: (params) => (
+            ),
+        },
+        {
+            field: 'galvanikaStat', headerName: 'Гальваника', width: columnState['galvanikaStat'] || 130, editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
                 <div onContextMenu={(event) => handleContextMenu(event, params.row.galvanikaCompl, params.row.quantity)}>
                     {params.value}
                     {params.quantity}
                 </div>
-            ), },
-        { field: 'termoplastStat', headerName: 'Термопласт', editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center',renderCell: (params) => (
+            ),
+        },
+        {
+            field: 'termoplastStat', headerName: 'Термопласт', width: columnState['termoplastStat'] || 130, editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
                 <div onContextMenu={(event) => handleContextMenu(event, params.row.termoplastCompl, params.row.quantity)}>
                     {params.value}
                     {params.quantity}
                 </div>
-            ), },
-        { field: 'upakovkaStat', headerName: 'Упаковка крепеж', editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center',renderCell: (params) => (
+            ),
+        },
+        {
+            field: 'upakovkaStat', headerName: 'Упаковка крепеж', width: columnState['upakovkaStat'] || 130, editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
                 <div onContextMenu={(event) => handleContextMenu(event, params.row.upakovkaCompl, params.row.quantity)}>
                     {params.value}
                     {params.quantity}
                 </div>
-            ), },
-        { field: 'guidesStat', headerName: 'Направляющие', editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center',renderCell: (params) => (
+            ),
+        },
+        {
+            field: 'guidesStat', headerName: 'Направляющие', width: columnState['guidesStat'] || 130, editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
                 <div onContextMenu={(event) => handleContextMenu(event, params.row.upakovkaCompl, params.row.quantity)}>
                     {params.value}
                     {params.quantity}
                 </div>
-            ), },
+            ),
+        },
 
 
     ];
@@ -202,7 +238,7 @@ export default function StatistikTable({ sektorsName }: { sektorsName: string })
         axios.get('/api/statistiks', { params })
             .then(response => {
                 const updatedRows = response.data.map((order: any) => {
-                 
+
 
                     // Сопоставление названия участка с соответствующими статусами
                     const statusMap: { [key: string]: { stat: string, compl: string } } = {
@@ -274,7 +310,7 @@ export default function StatistikTable({ sektorsName }: { sektorsName: string })
                 // setRows(sortedOrders);
 
                 setRows(sortedOrders);
-                
+
 
                 // setRows(updatedRows);
 
@@ -308,48 +344,59 @@ export default function StatistikTable({ sektorsName }: { sektorsName: string })
         }
     };
 
+ 
+    // Функция для обработки изменения ширины колонок
+    const handleColumnResize = (params) => {
+        setColumnState((prevState) => ({
+            ...prevState,
+            [params.colDef.field]: params.width,
+        }));
+    };
     return (
         <div>
             <div>
                 <Paper style={{ height: '100%', width: '100%', margin: '20px 0' }}>
-                    <DataGrid
-                        rows={rows}
-                        columns={columns}
+                    <Box sx={{ height: 'calc(115vh - 200px)', width: '100%', overflow: 'auto' }}>
+                        <DataGrid
+                            rows={rows}
+                            columns={columns}
 
-                        localeText={ruRU.components.MuiDataGrid.defaultProps.localeText}
-                        getRowClassName={getRowClassName}
-                        onProcessRowUpdateError={(error) => console.error('Ошибка при обновлении строки:', error)}
-                        sx={{
-                            '& .super-app-theme--header': {
-                                backgroundColor: '#bceaff',
-                                fontWeight: 'bold',
-                                // color: '#333',
-                                border: '1px solid #ccc',
-                            },
-                            '& .cell-sdel': {
-                                backgroundColor: '#3e7afc',
-                                fontWeight: 'bold',
-                                fontSize: 16,
-                                // color: '#000',
-                            },
-                            '& .MuiDataGrid-cell': {
-                                border: '1px solid #ccc',
-                                textAlign: 'center'
-                            },
+                            localeText={ruRU.components.MuiDataGrid.defaultProps.localeText}
+                            getRowClassName={getRowClassName}
+                            onProcessRowUpdateError={(error) => console.error('Ошибка при обновлении строки:', error)}
+                            onColumnWidthChange={handleColumnResize}
+                            sx={{
+                                '& .super-app-theme--header': {
+                                    backgroundColor: '#bceaff',
+                                    fontWeight: 'bold',
+                                    // color: '#333',
+                                    border: '1px solid #ccc',
+                                },
+                                '& .cell-sdel': {
+                                    backgroundColor: '#3e7afc',
+                                    fontWeight: 'bold',
+                                    fontSize: 16,
+                                    // color: '#000',
+                                },
+                                '& .MuiDataGrid-cell': {
+                                    border: '1px solid #ccc',
+                                    textAlign: 'center'
+                                },
 
-                            '& .cell-status-work': {
-                                backgroundColor: '#f9ff7e !important', // Зелёный цвет для активной ячейки
-                            },
-                            '& .cell-status-complete': {
-                                backgroundColor: '#5bfa22 !important', // Красный цвет для статуса просрочен
-                                // color: 'black', 
-                                // opacity: 0.9,// Белый текст для лучшей видимости
-                            },
+                                '& .cell-status-work': {
+                                    backgroundColor: '#f9ff7e !important', // Зелёный цвет для активной ячейки
+                                },
+                                '& .cell-status-complete': {
+                                    backgroundColor: '#5bfa22 !important', // Красный цвет для статуса просрочен
+                                    // color: 'black', 
+                                    // opacity: 0.9,// Белый текст для лучшей видимости
+                                },
 
 
 
-                        }}
-                    />
+                            }}
+                        />
+                    </Box>
                 </Paper>
                 {contextMenu && (
                     <Paper

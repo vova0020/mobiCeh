@@ -142,8 +142,7 @@ const Navbar1: React.FC = () => {
 
             <Button
               color="inherit"
-              onClick={(event) => handleMenuClick(event, 'finishing')}
-            >
+              onClick={(event) => handleMenuClick(event, 'finishing')}>
               ХВА
             </Button>
             <Menu
@@ -151,7 +150,7 @@ const Navbar1: React.FC = () => {
               open={openMenu === 'finishing'}
               onClose={handleMenuClose}
             >
-              {/* Передалать в подготовку */}
+              {/* ХВА */}
               <MenuItem onClick={handleMenuClose}>
                 <Link href="/pages/Подготовка" passHref>
                   Подготовка
@@ -190,20 +189,76 @@ const Navbar1: React.FC = () => {
 
         )}
 
-        {/* Элементы для всех ролей кроме Руководства
-        {role !== 'Руководство' && (
+        {/* Элементы для всех ролей кроме Руководства */}
+        {/* 'Мастер Нестинг-Присадка', 'Мастер Кромки-Присадки', ' Мастер ХВА' */}
+        {role === 'Мастер Нестинг-Присадка' && (
           <>
+            <Link href="/pages/Нестинг" passHref>
+              <Button color="inherit">Нестинг</Button>
+            </Link>
+            <Link href="/pages/Присадка" passHref>
+              <Button color="inherit">Присадка</Button>
+            </Link>
+
+          </>
+        )}
+        {role === 'Мастер Кромки-Присадки' && (
+          <>
+            <Link href="/pages/Кромка" passHref>
+              <Button color="inherit">Кромка</Button>
+            </Link>
+            <Link href="/pages/Присадка" passHref>
+              <Button color="inherit">Присадка</Button>
+            </Link>
+          </>
+        )}
+        {role === 'Мастер ХВА' && (
+          <>
+            <Button
+              color="inherit"
+              onClick={(event) => handleMenuClick(event, 'finishing')}>
+              ХВА
+            </Button>
+            <Menu
+              anchorEl={anchorEl}
+              open={openMenu === 'finishing'}
+              onClose={handleMenuClose}
+            >
+              {/* ХВА */}
+              <MenuItem onClick={handleMenuClose}>
+                <Link href="/pages/Мойка" passHref>
+                  Мойка
+                </Link>
+              </MenuItem>
+              <MenuItem onClick={handleMenuClose}>
+                <Link href="/pages/Гальваника" passHref>
+                  Гальваника
+                </Link>
+              </MenuItem>
+              <MenuItem onClick={handleMenuClose}>
+                <Link href="/pages/Термопласт" passHref>
+                  Термопласт
+                </Link>
+              </MenuItem>
+              <MenuItem onClick={handleMenuClose}>
+                <Link href="/pages/Упаковка" passHref>
+                  Упаковка крепеж
+                </Link>
+              </MenuItem>
+            </Menu>
+          </>
+        )}
+
+        {/* Кнопка Выйти */}
+        {role && (
+          <>
+            <Link href="/pages/statistik" passHref>
+              <Button color="inherit">Статистика</Button>
+            </Link>
             <Button color="inherit" onClick={handleLogout}>
               Выйти
             </Button>
           </>
-        )} */}
-
-        {/* Кнопка Выйти */}
-        {role && (
-          <Button color="inherit" onClick={handleLogout}>
-            Выйти
-          </Button>
         )}
       </Toolbar>
     </AppBar>
