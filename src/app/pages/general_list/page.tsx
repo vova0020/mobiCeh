@@ -324,7 +324,7 @@ export default function GeneralList() {
                                 konveer: row.konveer,
                                 sborka: row.sborka,
                                 setki: row.setki,
-                                guides: row.setki,
+                                guides: row.guides,
                                 metal: row.metal,
                                 provolka: row.provolka,
                                 xba: row.xba,

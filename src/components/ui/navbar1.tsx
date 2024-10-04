@@ -78,9 +78,9 @@ const Navbar1: React.FC = () => {
             <Link href="/pages/general_list" passHref>
               <Button color="inherit">Создание заказа</Button>
             </Link>
-            <Link href="/pages/statistik" passHref>
+            {/* <Link href="/pages/statistik" passHref>
               <Button color="inherit">Статистика</Button>
-            </Link>
+            </Link> */}
             <Button color="inherit" onClick={(event) => handleMenuClick(event, 'manufacturing')}>
               Основное производство
             </Button>
@@ -194,13 +194,20 @@ const Navbar1: React.FC = () => {
 
         )}
 
-        {role === 'Мастер участка' && (
+        {role === 'Мастер участка' && (sector === 'Конвеер' || sector === 'Сборка') ? (
+          <>
+            <Link href={`/pages/Конвеер`} passHref>
+              <Button color="inherit">Конвеер</Button>
+            </Link>
+            <Link href={`/pages/Сборка`} passHref>
+              <Button color="inherit">Сборка</Button>
+            </Link>
+          </>
+        ) : (
           <>
             <Link href={`/pages/${sector}`} passHref>
               <Button color="inherit">{sector}</Button>
             </Link>
-            
-
           </>
         )}
 
@@ -217,7 +224,7 @@ const Navbar1: React.FC = () => {
 
           </>
         )}
-        
+
         {role === 'Технолог' && (
           <>
             <Link href="/pages/general_list" passHref>
@@ -257,6 +264,16 @@ const Navbar1: React.FC = () => {
             >
               {/* ХВА */}
               <MenuItem onClick={handleMenuClose}>
+                <Link href="/pages/Подготовка" passHref>
+                  Подготовка
+                </Link>
+              </MenuItem>
+              <MenuItem onClick={handleMenuClose}>
+                <Link href="/pages/ХВА" passHref>
+                  ХВА
+                </Link>
+              </MenuItem>
+              <MenuItem onClick={handleMenuClose}>
                 <Link href="/pages/Мойка" passHref>
                   Мойка
                 </Link>
@@ -277,6 +294,17 @@ const Navbar1: React.FC = () => {
                 </Link>
               </MenuItem>
             </Menu>
+          </>
+        )}
+
+        {role === 'Мастер Кромки-Присадки' && (
+          <>
+            <Link href="/pages/Кромка" passHref>
+              <Button color="inherit">Кромка</Button>
+            </Link>
+            <Link href="/pages/Присадка" passHref>
+              <Button color="inherit">Присадка</Button>
+            </Link>
           </>
         )}
 

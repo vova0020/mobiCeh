@@ -8,8 +8,8 @@ export async function POST(req: NextRequest) {
     try {
         // const rowToSend = await req.json();
         const {id,orders, workStatuses} = await req.json();
-        console.log(id);
-        console.log(orders);
+        // console.log(id);
+        // console.log(orders);
         // console.log(workStatuses);
         
         
