@@ -14,6 +14,7 @@ import { jwtDecode } from 'jwt-decode'; // Импортируем библиот
 
 interface DecodedToken {
   role: string; // Предполагаем, что в токене есть поле 'role'
+  sector: string; // Предполагаем, что в токене есть поле 'role'
 }
 
 const Navbar1: React.FC = () => {
@@ -21,6 +22,7 @@ const Navbar1: React.FC = () => {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null); // Состояние для хранения роли пользователя
+  const [sector, setSector] = useState<string | null>(null); // Состояние для хранения роли пользователя
   const router = useRouter();
 
   // Используем useEffect для работы с localStorage на стороне клиента
@@ -31,7 +33,10 @@ const Navbar1: React.FC = () => {
       try {
         // Декодируем токен
         const decoded: DecodedToken = jwtDecode(storedToken); // Декодируем JWT
+        // console.log();
+
         setRole(decoded.role); // Сохраняем роль в состоянии
+        setSector(decoded.sector); // Сохраняем роль в состоянии
       } catch (error) {
         console.error("Ошибка при декодировании токена:", error);
       }
@@ -189,6 +194,16 @@ const Navbar1: React.FC = () => {
 
         )}
 
+        {role === 'Мастер участка' && (
+          <>
+            <Link href={`/pages/${sector}`} passHref>
+              <Button color="inherit">{sector}</Button>
+            </Link>
+            
+
+          </>
+        )}
+
         {/* Элементы для всех ролей кроме Руководства */}
         {/* 'Мастер Нестинг-Присадка', 'Мастер Кромки-Присадки', ' Мастер ХВА' */}
         {role === 'Мастер Нестинг-Присадка' && (
@@ -202,6 +217,22 @@ const Navbar1: React.FC = () => {
 
           </>
         )}
+        
+        {role === 'Технолог' && (
+          <>
+            <Link href="/pages/general_list" passHref>
+              <Button color="inherit">Создание заказа</Button>
+            </Link>
+          </>
+        )}
+        {role === 'Менеджер' && (
+          <>
+            <Link href="/pages/general_list" passHref>
+              <Button color="inherit">Создание заказа</Button>
+            </Link>
+          </>
+        )}
+
         {role === 'Мастер Кромки-Присадки' && (
           <>
             <Link href="/pages/Кромка" passHref>
@@ -212,7 +243,7 @@ const Navbar1: React.FC = () => {
             </Link>
           </>
         )}
-        {role === 'Мастер ХВА' && (
+        {role === ' Мастер ХВА' && (
           <>
             <Button
               color="inherit"

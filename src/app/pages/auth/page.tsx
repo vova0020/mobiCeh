@@ -115,7 +115,7 @@ export default function Auth() {
                 router.push('/pages/Нестинг');
             }else if (decoded.role === 'Мастер Кромки-Присадки') {
                 router.push('/pages/Кромка');
-            }else if (decoded.role === 'Мастер ХВА') {
+            }else if (decoded.role === ' Мастер ХВА') {
                 router.push('/pages/Мойка');
             } else {
                 alert("Неизвестная роль");
