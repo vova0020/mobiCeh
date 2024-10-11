@@ -73,7 +73,7 @@ model WorkDone {
   date     DateTime // Дата и время выполнения
 
   taskId Int // Внешний ключ на задания
-  task   WorkstationTask @relation(fields: [taskId], references: [id]) // Связь с таблицей Задания для участков
+  task   WorkstationTask @relation(fields: [taskId], references: [id], onDelete: Cascade) // Связь с таблицей Задания для участков
 }
 
 // Модель Заданий для участков
@@ -86,7 +86,7 @@ model WorkstationTask {
   completedTask Boolean? // выполнено ли задание
   status        String? // Статус
   pd            String? // пд
-  dateComplite  DateTime? // Дата и время выполнения
+  dateComplite  String? // Дата и время выполнения
   ostatok       Int? // остаток
   ostatokInpt   Int? // остаток для ввода
   workDone      WorkDone[] // Связь с таблицей Выполнение работы
@@ -119,7 +119,7 @@ model WorkDonePokraska {
 
   // Внешний ключ на задание участка
   workstationTaskId Int
-  workstationTask   WorkstationTask @relation(fields: [workstationTaskId], references: [id])
+  workstationTask   WorkstationTask @relation(fields: [workstationTaskId], references: [id], onDelete: Cascade)
 }
 
 model Users {

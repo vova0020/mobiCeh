@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { DataGrid, GridColDef, GridFilterModel, GridLogicOperator, GridRowModel } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
 import { ruRU } from '@mui/x-data-grid/locales/ruRU';
-import { Box, Button, Checkbox, FormControlLabel } from '@mui/material';
+import { Box, Button, Checkbox, FormControlLabel, MenuItem, Select } from '@mui/material';
 import axios from 'axios';
 import * as XLSX from 'xlsx';  // Импортируем библиотеку для работы с Excel
 import Navbar1 from '@/components/ui/navbar1';
@@ -70,12 +70,12 @@ export default function GeneralList() {
     });
     const [isEditing, setIsEditing] = useState(false); // Редактирование существующих строк
     const [isNewRowAdded, setIsNewRowAdded] = useState(false); // Новая строка добавлена
-    const [showCompleted, setShowCompleted] = useState(false); 
+    const [showCompleted, setShowCompleted] = useState(false);
     const [columnState, setColumnState] = useState<any>({}); // Состояние для ширины колонок
-    
+
 
     // Получение данных при загрузке компонента
-    useEffect(() => {
+    async function getBase() {
         axios.get('/api/createOrder')
             .then(response => {
                 const ordersWithStatuses = response.data.map(order => ({
@@ -113,11 +113,62 @@ export default function GeneralList() {
             .catch(error => {
                 console.error('Ошибка при загрузке данных:', error);
             });
+    }
+    useEffect(() => {
+        getBase()
     }, []);
+
+    // const fetchData = () => {
+    //     axios.get('/api/createOrder')
+    //         .then(response => {
+    //             const ordersWithStatuses = response.data.map(order => ({
+    //                 ...order,
+    //                 pdDateNesting: order.pdDateNesting === 'NaN.NaN.NaN' ? '' : order.pdDateNesting,
+    //                 pdDateRaskroi: order.pdDateRaskroi === 'NaN.NaN.NaN' ? '' : order.pdDateRaskroi,
+    //                 completionRate: `${Math.round(order.completionRate)} %`,
+    //                 raskroi: order.workStatuses[0]?.raskroi || false,
+    //                 nesting: order.workStatuses[0]?.nesting || false,
+    //                 zerkala: order.workStatuses[0]?.zerkala || false,
+    //                 kromka: order.workStatuses[0]?.kromka || false,
+    //                 prisadka: order.workStatuses[0]?.prisadka || false,
+    //                 pokraska: order.workStatuses[0]?.pokraska || false,
+    //                 furnitura: order.workStatuses[0]?.furnitura || false,
+    //                 konveer: order.workStatuses[0]?.konveer || false,
+    //                 sborka: order.workStatuses[0]?.sborka || false,
+    //                 setki: order.workStatuses[0]?.setki || false,
+    //                 guides: order.workStatuses[0]?.guides || false,
+    //                 metal: order.workStatuses[0]?.metal || false,
+    //                 provolka: order.workStatuses[0]?.provolka || false,
+    //                 xba: order.workStatuses[0]?.xba || false,
+    //                 moika: order.workStatuses[0]?.moika || false,
+    //                 galivanika: order.workStatuses[0]?.galivanika || false,
+    //                 termoplast: order.workStatuses[0]?.termoplast || false,
+    //                 ypakovka: order.workStatuses[0]?.ypakovka || false,
+    //             }));
+
+    //             const sortedOrders = ordersWithStatuses.sort((a, b) => a.id - b.id);
+    //             setRows(sortedOrders);
+
+    //             // Устанавливаем новый ID как максимальный ID + 1
+    //             const maxId = sortedOrders.length > 0 ? Math.max(...sortedOrders.map(order => order.id)) : 0;
+    //             setNewRowId(maxId + 1);
+    //         })
+    //         .catch(error => {
+    //             console.error('Ошибка при загрузке данных:', error);
+    //         });
+    // };
+
+    // useEffect(() => {
+    //     fetchData(); // Первоначальная загрузка данных
+
+    //     const interval = setInterval(fetchData, 5000); // Обновление данных каждые 3 секунды
+
+    //     return () => clearInterval(interval); // Очистка интервала при размонтировании компонента
+    // }, []);
 
     const filteredRows = showCompleted ? rows.filter(row => row.isCompleted === false) : rows;
 
-    
+
 
 
     // Обработчик загрузки Excel файла
@@ -141,9 +192,9 @@ export default function GeneralList() {
                         quantity: row[4] || 0,
                         pdDate: formatDateFromExcel(row[5]),
                         raskroi: row[6]?.trim().toLowerCase() === 'да',
-                        pdDateRaskroi: formatDateFromExcel(row[7])|| '',
+                        pdDateRaskroi: formatDateFromExcel(row[7]) || '',
                         nesting: row[8]?.trim().toLowerCase() === 'да',
-                        pdDateNesting: formatDateFromExcel(row[9])|| '',
+                        pdDateNesting: formatDateFromExcel(row[9]) || '',
                         zerkala: row[10]?.trim().toLowerCase() === 'да',
                         kromka: row[11]?.trim().toLowerCase() === 'да',
                         prisadka: row[12]?.trim().toLowerCase() === 'да',
@@ -165,7 +216,7 @@ export default function GeneralList() {
                 return null;
             }).filter(row => row !== null);
             console.log(loadedRows);
-            
+
 
             setRows(prevRows => [...prevRows, ...loadedRows]);
             setNewRows(loadedRows);
@@ -214,6 +265,7 @@ export default function GeneralList() {
         setNewRowId(newRowId + 1); // Увеличиваем newRowId на 1
         setNewRows((prevNewRows) => [...prevNewRows, newRow]);
         setIsNewRowAdded(true);
+
     };
 
 
@@ -222,6 +274,8 @@ export default function GeneralList() {
 
     // Обработчик изменения строки
     const handleRowEdit = (newRow: GridRowModel) => {
+
+
         // Проверка, если раскрой отмечен, то поле pdDateRaskroi должно быть заполнено и в правильном формате
         if (newRow.raskroi) {
             if (!newRow.pdDateRaskroi || !dateRegex.test(newRow.pdDateRaskroi.trim())) {
@@ -282,6 +336,7 @@ export default function GeneralList() {
             );
             setIsNewRowAdded(false); // Скрыть кнопку "Сохранить новую строку"
             setNewRows([]); // Очистить состояние новых строк после сохранения
+            await getBase()
         } catch (error) {
             console.error('Ошибка при сохранении новых строк:', error);
             alert('Ошибка при сохранении новых строк:', error);
@@ -295,6 +350,8 @@ export default function GeneralList() {
             await Promise.all(
                 Array.from(editedRowIds).map(async (id) => {
                     const row = rows.find(row => row.id === id);
+                    console.log(row);
+
                     if (row) {
                         const rowToSend = {
                             ...row,
@@ -342,6 +399,7 @@ export default function GeneralList() {
             );
             setIsEditing(false); // Скрыть кнопку "Сохранить изменения"
             setEditedRowIds(new Set()); // Очистить состояние изменённых строк
+            await getBase()
         } catch (error) {
             console.error('Ошибка при сохранении изменений:', error);
             alert('Ошибка при сохранении изменений:', error);
@@ -356,41 +414,57 @@ export default function GeneralList() {
                 return 'cell-status-work';
             case 'Завершен':
                 return 'cell-status-complete';
+            case 'Отложенно':
+                return 'cell-status-delayed';
             default:
                 return ''; // Ожидание: строка без класса
         }
     };
     const columns: GridColDef[] = [
-        { field: 'id', headerName: '№ запуска', editable: true, width: columnState['id'] ||  70 },
-        { field: 'orderName', headerName: 'Наименование заказа', editable: true, width: columnState['orderName'] ||  150 },
-        { field: 'article', headerName: 'Артикул', editable: true, width: columnState['article'] ||  100 },
-        { field: 'receivedDate', headerName: 'Дата получения', editable: true, width: columnState['receivedDate'] ||  130 },
-        { field: 'status', headerName: 'Статус', editable: true, width: columnState['status'] ||  90 },
-        { field: 'isCompleted', headerName: 'Завершен', editable: true, type: 'boolean', width: columnState['isCompleted'] ||  80 },
-        { field: 'completionRate', headerName: '% Выполнения', editable: true, type: 'number', width: columnState['completionRate'] ||  130 },
-        { field: 'nomenclature', headerName: 'Номенклатура', editable: true, width: columnState['nomenclature'] ||  150 },
-        { field: 'quantity', headerName: 'Количество', editable: true, type: 'number', width: columnState['quantity'] ||  90 },
-        { field: 'pdDate', headerName: 'План. дата', editable: true, width: columnState['pdDate'] ||  130 },
-        { field: 'raskroi', headerName: 'Раскрой', editable: true, type: 'boolean', width: columnState['raskroi'] ||  130 },
-        { field: 'pdDateRaskroi', headerName: 'Пд для Раскроя', editable: true,  width: columnState['pdDateRaskroi'] ||  130 },
-        { field: 'nesting', headerName: 'Нестинг', editable: true, type: 'boolean', width: columnState['nesting'] ||  130 },
-        { field: 'pdDateNesting', headerName: 'Пд для Нестинга', editable: true, width: columnState['pdDateNesting'] ||  130},
-        { field: 'zerkala', headerName: 'Зеркала', editable: true, type: 'boolean', width: columnState['zerkala'] ||  130},
-        { field: 'kromka', headerName: 'Кромка', editable: true, type: 'boolean', width: columnState['kromka'] ||  130 },
-        { field: 'prisadka', headerName: 'Присадка', editable: true, type: 'boolean', width: columnState['prisadka'] ||  130 },
-        { field: 'metal', headerName: 'Металлокаркасы', editable: true, type: 'boolean', width: columnState['metal'] ||  130 },
-        { field: 'pokraska', headerName: 'Покраска', editable: true, type: 'boolean' , width: columnState['pokraska'] ||  130},
-        { field: 'furnitura', headerName: 'Фурнитура', editable: true, type: 'boolean', width: columnState['furnitura'] ||  130},
-        { field: 'konveer', headerName: 'Конвейер', editable: true, type: 'boolean', width: columnState['konveer'] ||  130 },
-        { field: 'sborka', headerName: 'Сборка', editable: true, type: 'boolean' , width: columnState['sborka'] ||  130},
-        { field: 'setki', headerName: 'Сетки', editable: true, type: 'boolean', width: columnState['setki'] ||  130 },
-        { field: 'provolka', headerName: 'Подготовка', editable: true, type: 'boolean', width: columnState['provolka'] ||  130 },
-        { field: 'xba', headerName: 'ХВА', editable: true, type: 'boolean', width: columnState['xba'] ||  130 },
-        { field: 'moika', headerName: 'Мойка', editable: true, type: 'boolean', width: columnState['moika'] ||  130 },
-        { field: 'galivanika', headerName: 'Гальваника', editable: true, type: 'boolean', width: columnState['galivanika'] ||  130 },
-        { field: 'termoplast', headerName: 'Термопласт', editable: true, type: 'boolean', width: columnState['termoplast'] ||  130 },
-        { field: 'ypakovka', headerName: 'Упаковка крепеж', editable: true, type: 'boolean', width: columnState['ypakovka'] ||  130 },
-        { field: 'guides', headerName: 'Направляющие', editable: true, type: 'boolean', width: columnState['guides'] ||  130 },
+        { field: 'id', headerName: '№ запуска', editable: true, width: columnState['id'] || 70 },
+        { field: 'orderName', headerName: 'Наименование заказа', editable: true, width: columnState['orderName'] || 150 },
+        { field: 'article', headerName: 'Артикул', editable: true, width: columnState['article'] || 100 },
+        { field: 'receivedDate', headerName: 'Дата получения', editable: true, width: columnState['receivedDate'] || 130 },
+        {
+            field: 'status', headerName: 'Статус', editable: true, width: columnState['status'] || 90, // Отображаем статус в обычном режиме
+            renderCell: (params) => params.value,
+            // Показываем выпадающий список при редактировании
+            renderEditCell: (params) => (
+                <Select
+                    value={params.value}
+                    onChange={(event) => params.api.setEditCellValue({ id: params.id, field: 'status', value: event.target.value })}
+                    fullWidth
+                >
+                    <MenuItem value="Отложенно">Отложенно</MenuItem>
+                    <MenuItem value="Активно">Активно</MenuItem>
+                </Select>
+            ),
+        },
+        { field: 'isCompleted', headerName: 'Завершен', editable: true, type: 'boolean', width: columnState['isCompleted'] || 80 },
+        { field: 'completionRate', headerName: '% Выполнения', editable: true, type: 'number', width: columnState['completionRate'] || 130 },
+        { field: 'nomenclature', headerName: 'Номенклатура', editable: true, width: columnState['nomenclature'] || 150 },
+        { field: 'quantity', headerName: 'Количество', editable: true, type: 'number', width: columnState['quantity'] || 90 },
+        { field: 'pdDate', headerName: 'План. дата', editable: true, width: columnState['pdDate'] || 130 },
+        { field: 'raskroi', headerName: 'Раскрой', editable: true, type: 'boolean', width: columnState['raskroi'] || 130 },
+        { field: 'pdDateRaskroi', headerName: 'Пд для Раскроя', editable: true, width: columnState['pdDateRaskroi'] || 130 },
+        { field: 'nesting', headerName: 'Нестинг', editable: true, type: 'boolean', width: columnState['nesting'] || 130 },
+        { field: 'pdDateNesting', headerName: 'Пд для Нестинга', editable: true, width: columnState['pdDateNesting'] || 130 },
+        { field: 'zerkala', headerName: 'Зеркала', editable: true, type: 'boolean', width: columnState['zerkala'] || 130 },
+        { field: 'kromka', headerName: 'Кромка', editable: true, type: 'boolean', width: columnState['kromka'] || 130 },
+        { field: 'prisadka', headerName: 'Присадка', editable: true, type: 'boolean', width: columnState['prisadka'] || 130 },
+        { field: 'metal', headerName: 'Металлокаркасы', editable: true, type: 'boolean', width: columnState['metal'] || 130 },
+        { field: 'pokraska', headerName: 'Покраска', editable: true, type: 'boolean', width: columnState['pokraska'] || 130 },
+        { field: 'furnitura', headerName: 'Фурнитура', editable: true, type: 'boolean', width: columnState['furnitura'] || 130 },
+        { field: 'konveer', headerName: 'Конвейер', editable: true, type: 'boolean', width: columnState['konveer'] || 130 },
+        { field: 'sborka', headerName: 'Сборка', editable: true, type: 'boolean', width: columnState['sborka'] || 130 },
+        { field: 'setki', headerName: 'Сетки', editable: true, type: 'boolean', width: columnState['setki'] || 130 },
+        { field: 'provolka', headerName: 'Подготовка', editable: true, type: 'boolean', width: columnState['provolka'] || 130 },
+        { field: 'xba', headerName: 'ХВА', editable: true, type: 'boolean', width: columnState['xba'] || 130 },
+        { field: 'moika', headerName: 'Мойка', editable: true, type: 'boolean', width: columnState['moika'] || 130 },
+        { field: 'galivanika', headerName: 'Гальваника', editable: true, type: 'boolean', width: columnState['galivanika'] || 130 },
+        { field: 'termoplast', headerName: 'Термопласт', editable: true, type: 'boolean', width: columnState['termoplast'] || 130 },
+        { field: 'ypakovka', headerName: 'Упаковка крепеж', editable: true, type: 'boolean', width: columnState['ypakovka'] || 130 },
+        { field: 'guides', headerName: 'Направляющие', editable: true, type: 'boolean', width: columnState['guides'] || 130 },
     ];
 
     // Функция для обработки изменения ширины колонок
@@ -435,10 +509,14 @@ export default function GeneralList() {
                         '& .cell-status-complete': {
                             backgroundColor: '#5bfa22 !important',
                         },
+                        '& .cell-status-delayed': {
+                            backgroundColor: '#9c9c9c !important',
+                            opacity: 0.7
+                        },
                     }}
                 />
             </Box>
         </Paper>
     );
-    
+
 }

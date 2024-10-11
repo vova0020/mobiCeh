@@ -1,4 +1,4 @@
-import StatistikTable from '@/components/statistiksTable';
+import StatistikTable2 from '@/components/statistiksTable2';
 import Navbar1 from '@/components/ui/navbar1';
 
 
@@ -6,7 +6,7 @@ import React from 'react'
 
 
 
-export default function Statistik() {
+export default function Statistik2() {
 //    const sektorsName1 = 'Раскрой'
 
     
@@ -16,7 +16,7 @@ export default function Statistik() {
         <div> <Navbar1 />
             
             <div>
-                <StatistikTable />
+                <StatistikTable2 />
             </div>
         </div>
     )

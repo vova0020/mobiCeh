@@ -59,7 +59,8 @@ export default function TableWorkplace({ workData }: { workData: string }) {
         { field: 'ostatok', headerName: 'Остаток', width: columnState['ostatok'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         { field: 'completionRate', headerName: 'Выполнено %', width: columnState['completionRate'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         { field: 'status', headerName: 'Статус', width: columnState['status'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', cellClassName: (params) => params.value === 'Просрочен' ? 'cell-status-overdue' : '', },
-        { field: 'prosrok', headerName: 'Дней просрочки', width: columnState['prosrok'] || 130, editable: editableStatus, type: 'number', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'prosrok', headerName: 'Дней просрочки', width: columnState['prosrok'] || 130, editable: editableStatus, type: 'number', headerClassName: 'super-app-theme--header', headerAlign: 'center',cellClassName: (params) =>
+            params.value > 0 ? 'cell-status-overdue' : '', },
         { field: 'relevant', headerName: 'Актуальных', width: columnState['relevant'] || 130, editable: editableStatus, type: 'number', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         {
             field: 'sdel', headerName: 'Сделано', width: columnState['sdel'] || 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
@@ -77,33 +78,29 @@ export default function TableWorkplace({ workData }: { workData: string }) {
     const getStatus = (completionRate: number, pdDate: Date, currentDate: Date): { status: string, prosrok: number } => {
         let status = 'Невыполнен';
         let prosrok = 0;
-        console.log(pdDate);
-
-        // Обнуляем время у обеих дат, чтобы считать только дни
-        const pdDateWithoutTime = new Date(pdDate.getFullYear(), pdDate.getMonth(), pdDate.getDate());
-        const currentDateWithoutTime = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-
+    
         if (completionRate > 99) {
-            status = 'ОК';
+          status = 'ОК';
         } else {
-            if (pdDateWithoutTime < currentDateWithoutTime) {
-                status = 'Просрочен';
-                const diffTime = Math.abs(currentDateWithoutTime.getTime() - pdDateWithoutTime.getTime());
-
-                prosrok = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            }
+          if (pdDate < currentDate) {
+            status = 'Просрочен';
+            const diffTime = Math.abs(currentDate.getTime() - pdDate.getTime());
+            prosrok = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          }
         }
-
+    
         return { status, prosrok };
-    };
-
+      };
 
     const fetchData = () => {
         const params = { work: workData };
 
+
         axios.get('/api/workplace', { params })
             .then(response => {
                 const updatedRows = response.data.map((order: any) => {
+                    console.log(order.tasks[0].pd);
+                    
                     const receivedDateParts = order.tasks[0].pd.split('.');
                     const receivedDate = new Date(
                         parseInt(receivedDateParts[2], 10),
@@ -137,20 +134,21 @@ export default function TableWorkplace({ workData }: { workData: string }) {
                     return {
                         ...order,
                         pd: order.tasks[0].pd,
-                        status: status,
+                        status: order.tasks[0].status,
                         prosrok: prosrok,
                         actual: actual,
                         relevant: relevant,
                         sdel: todayWorkDone,
                         complete: totalWorkDone,
-                        ostatok: ostatok >= 0 ? ostatok : 0,
+                        ostatok: order.tasks[0].ostatok,
                         completionRate: `${completionRate}%`,
                         ostatokInpt: order.ostatokInpt,
                     };
                 });
                 const sortedOrders = updatedRows.sort((a, b) => a.id - b.id);
                 // setRows(sortedOrders);
-
+                
+                
                 setRows(sortedOrders);
             })
             .catch(error => {

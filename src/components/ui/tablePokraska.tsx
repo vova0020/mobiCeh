@@ -53,7 +53,18 @@ export default function TablePokraska({ workData }: { workData: string }) {
     { field: 'ostatok', headerName: 'Остаток', width: columnState['ostatok'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
     { field: 'completionRate', headerName: 'Выполнено %', width: columnState['completionRate'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
     { field: 'status', headerName: 'Статус', width: columnState['status'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', cellClassName: (params) => params.value === 'Просрочен' ? 'cell-status-overdue' : '', },
-    { field: 'prosrok', headerName: 'Дней просрочки', width: columnState['prosrok'] || 130, editable: editableStatus, type: 'number', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+    {
+      field: 'prosrok',
+      headerName: 'Дней просрочки',
+      width: columnState['prosrok'] || 130,
+      editable: editableStatus,
+      type: 'number',
+      headerClassName: 'super-app-theme--header',
+      headerAlign: 'center',
+      cellClassName: (params) =>
+        params.value > 0 ? 'cell-status-overdue' : '', // Если просрочка больше 0, добавляем класс 'cell-red'
+    }
+    ,
     { field: 'relevant', headerName: 'Актуальных', width: columnState['relevant'] || 130, editable: editableStatus, type: 'number', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
     {
       field: 'shlif1Plan', headerName: 'Шлифовка 1 план', width: columnState['shlif1Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
@@ -183,13 +194,13 @@ export default function TablePokraska({ workData }: { workData: string }) {
           return {
             ...order,
             pd: order.tasks[0].pd,
-            status: status,
+            status: order.tasks[0].status,
             prosrok: prosrok,
             actual: actual,
             relevant: relevant,
             // sdel: todayWorkDone,
             complete: order.tasks[0]?.completedAll,
-            ostatok: order.tasks[0]?.ostatok,
+            ostatok: order.tasks[0].ostatok,
             completionRate: `${completionRate}%`,
             ostatokInpt: order.tasks[0]?.ostatokInpt,
             shlif1Fakt: order.tasks[0]?.workDonePokraska[0]?.grinding1Fakt,
@@ -216,7 +227,7 @@ export default function TablePokraska({ workData }: { workData: string }) {
   useEffect(() => {
     fetchData(); // Первоначальная загрузка данных
 
-    const interval = setInterval(fetchData, 10000); // Обновление данных каждые 3 секунды
+    const interval = setInterval(fetchData, 5000); // Обновление данных каждые 3 секунды
 
     return () => clearInterval(interval); // Очистка интервала при размонтировании компонента
   }, [workData]);
@@ -286,6 +297,19 @@ export default function TablePokraska({ workData }: { workData: string }) {
     }));
   };
 
+
+  const getRowClassName = (params) => {
+    const completionRate = parseFloat(params.row.completionRate.replace('%', ''));
+
+    if (completionRate > 0 && completionRate < 99) {
+      return 'cell-status-work'; // Класс для желтого цвета
+    } else if (completionRate >= 99) {
+      return 'cell-status-complete'; // Класс для зеленого цвета
+    }
+
+    return ''; // Без дополнительных стилей для остальных случаев
+  };
+
   return (
     <div>
       <div
@@ -319,6 +343,7 @@ export default function TablePokraska({ workData }: { workData: string }) {
             processRowUpdate={handleProcessRowUpdate}
             onProcessRowUpdateError={(error) => console.error('Ошибка при обновлении строки:', error)}
             onColumnWidthChange={handleColumnResize}
+            getRowClassName={getRowClassName}
 
             sx={{
               '& .super-app-theme--header': {
@@ -338,7 +363,7 @@ export default function TablePokraska({ workData }: { workData: string }) {
                 textAlign: 'center'
               },
               '& .cell-ostatok-zero': {
-                backgroundColor: '#58ff1b',  // Зеленый цвет
+                backgroundColor: '#58ff1b !important',  // Зеленый цвет
                 // pointerEvents: 'none',  // Делаем ячейку неактивной
                 opacity: 0.4,
                 fontSize: 22,
@@ -346,7 +371,7 @@ export default function TablePokraska({ workData }: { workData: string }) {
                 color: 'black'
               },
               '& .cell-ostatok-active': {
-                backgroundColor: '##8a8adc', // Синий цвет для активной ячейки
+                backgroundColor: '#8a8adc !important', // Синий цвет для активной ячейки
                 // opacity: 0.7,
                 fontSize: 22,
                 fontWeight: 'bold',
@@ -356,6 +381,14 @@ export default function TablePokraska({ workData }: { workData: string }) {
                 backgroundColor: 'red', // Красный цвет для статуса просрочен
                 color: 'black',
                 opacity: 0.9,// Белый текст для лучшей видимости
+              },
+              '& .cell-status-work': {
+                backgroundColor: '#f9ff7e !important', // Зелёный цвет для активной ячейки
+              },
+              '& .cell-status-complete': {
+                backgroundColor: '#5bfa22 !important', // Красный цвет для статуса просрочен
+                // color: 'black', 
+                // opacity: 0.9,// Белый текст для лучшей видимости
               },
 
             }}

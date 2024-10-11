@@ -7,7 +7,7 @@ const prisma = new prismaInteraction();
 export async function POST(req: NextRequest) {
     try {
         const { orderId, workstationName, doneToday } = await req.json();
-        console.log(doneToday);
+        // console.log(doneToday);
         
 
         // // Проверяем корректность данных

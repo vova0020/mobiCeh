@@ -78,9 +78,12 @@ const Navbar1: React.FC = () => {
             <Link href="/pages/general_list" passHref>
               <Button color="inherit">Создание заказа</Button>
             </Link>
-            {/* <Link href="/pages/statistik" passHref>
-              <Button color="inherit">Статистика</Button>
-            </Link> */}
+            <Link href="/pages/adminka" passHref>
+              <Button color="inherit">Админка</Button>
+            </Link>
+            <Link href="/pages/statistik2" passHref>
+              <Button color="inherit">Статистика 2</Button>
+            </Link>
             <Button color="inherit" onClick={(event) => handleMenuClick(event, 'manufacturing')}>
               Основное производство
             </Button>

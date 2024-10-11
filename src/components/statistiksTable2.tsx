@@ -7,6 +7,12 @@ import { ruRU } from '@mui/x-data-grid/locales/ruRU';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react'
 
+
+interface WorkDone {
+    quantity: number;
+    date: Date;
+}
+
 interface OrderRow {
     id: number;
     launchNumber: string;
@@ -51,17 +57,19 @@ interface OrderRow {
     termoplastCompl: number;
     upakovkaCompl: number;
     guidesCompl: number;
+    workDone?: WorkDone[];
 
 }
 
-export default function StatistikTable() {
+export default function StatistikTable2() {
 
     const [rows, setRows] = useState<OrderRow[]>([]);
     const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number; value: number | null; quantity: number | null } | null>(null);
     const [columnState, setColumnState] = useState<any>({}); // Состояние для ширины колонок
+    const [contextMenuData, setContextMenuData] = useState<WorkDone[] | null>(null);
 
 
-    const handleContextMenu = (event: React.MouseEvent, value: number, quantity: number) => {
+    const handleContextMenu = (event: React.MouseEvent, value: number, quantity: number, workDone: WorkDone[]) => {
         event.preventDefault();
         setContextMenu({
             mouseX: event.clientX - 2,
@@ -69,10 +77,62 @@ export default function StatistikTable() {
             value: value,
             quantity: quantity
         });
+        setContextMenuData(workDone); // Добавляем данные из WorkDone
     };
+
 
     const handleClose = () => {
         setContextMenu(null);
+    };
+    const renderContextMenu = () => {
+        if (!contextMenu) return null;
+        const formatDate = (isoDateString: string) => {
+            const date = new Date(isoDateString);
+
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // getMonth() возвращает месяцы с 0 (январь = 0)
+            const year = date.getFullYear();
+
+            return `${day}.${month}.${year}`;
+        };
+
+
+        return (
+            <div
+                style={{
+                    position: 'absolute',
+                    top: contextMenu.mouseY,
+                    left: contextMenu.mouseX,
+                    zIndex: 1000,
+                    padding: '10px',
+                    backgroundColor: '#fff',
+                    border: '1px solid #ccc',
+                }}
+                onMouseLeave={handleClose}
+            >
+                <div>Значение: {contextMenu.value}</div>
+                <div>Количество: {contextMenu.quantity}</div>
+                <div>
+
+                    {contextMenuData && contextMenuData.length > 0 ? (
+                        <div>
+                            <h4>Данные выполнения:</h4>
+                            <ul>
+                                {contextMenuData.map((workDone, index) => (
+                                    <li key={index}>
+                                        Количество: {workDone.quantity}, Дата: {formatDate(workDone.date)}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+
+                    ) : (
+                        <div>Нет данных выполнения</div>
+                    )}
+                </div>
+            </div>
+        );
     };
 
 
@@ -87,7 +147,7 @@ export default function StatistikTable() {
         { field: 'completionRate', headerName: '% Выполнения', editable: true, type: 'number', width: columnState['completionRate'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         {
             field: 'raskroiStat', headerName: 'Раскрой', width: columnState['raskroiStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.raskroiCompl, params.row.quantity)}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.raskroiCompl, params.row.quantity, params.row.workDone, )}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -95,7 +155,7 @@ export default function StatistikTable() {
         },
         {
             field: 'zerkaloStat', headerName: 'Зеркала', width: columnState['zerkaloStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.zerkaloCompl, params.row.quantity)}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.zerkaloCompl, params.row.quantity, params.row.workDone)}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -103,7 +163,7 @@ export default function StatistikTable() {
         },
         {
             field: 'nestingStat', headerName: 'Нестинг', width: columnState['nestingStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.nestingCompl, params.row.quantity)}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.nestingCompl, params.row.quantity, params.row.workDone)}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -111,7 +171,7 @@ export default function StatistikTable() {
         },
         {
             field: 'kromkaStat', headerName: 'Кромка', width: columnState['kromkaStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.kromkaCompl, params.row.quantity)}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.kromkaCompl, params.row.quantity, params.row.workDone)}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -119,7 +179,7 @@ export default function StatistikTable() {
         },
         {
             field: 'prisadkaStat', headerName: 'Присадка', width: columnState['prisadkaStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.prisadkaCompl, params.row.quantity)}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.prisadkaCompl, params.row.quantity, params.row.workDone, params.row.workDone)}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -127,7 +187,7 @@ export default function StatistikTable() {
         },
         {
             field: 'metalStat', headerName: 'Металлокаркасы', width: columnState['metalStat'] || 130, editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.metalCompl, params.row.quantity)}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.metalCompl, params.row.quantity, params.row.workDone)}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -135,7 +195,7 @@ export default function StatistikTable() {
         },
         {
             field: 'pokraskaStat', headerName: 'Покраска', width: columnState['pokraskaStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.pokraskaCompl, params.row.quantity)}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.pokraskaCompl, params.row.quantity, params.row.workDone)}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -143,7 +203,7 @@ export default function StatistikTable() {
         },
         {
             field: 'furnituraStat', headerName: 'Фурнитура', width: columnState['furnituraStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.furnituraCompl, params.row.quantity)}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.furnituraCompl, params.row.quantity, params.row.workDone)}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -151,7 +211,7 @@ export default function StatistikTable() {
         },
         {
             field: 'konveerStat', headerName: 'Конвеер', width: columnState['konveerStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.konveerCompl, params.row.quantity)}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.konveerCompl, params.row.quantity, params.row.workDone)}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -159,7 +219,7 @@ export default function StatistikTable() {
         },
         {
             field: 'sborkaStat', headerName: 'Сборка', width: columnState['sborkaStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.sborkaCompl, params.row.quantity)}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.sborkaCompl, params.row.quantity, params.row.workDone)}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -167,7 +227,7 @@ export default function StatistikTable() {
         },
         {
             field: 'setkiStat', headerName: 'Сетки', width: columnState['setkiStat'] || 130, editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.setkiCompl, params.row.quantity)}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.setkiCompl, params.row.quantity, params.row.workDone)}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -175,7 +235,7 @@ export default function StatistikTable() {
         },
         {
             field: 'provolkaStat', headerName: 'Подготовка', width: columnState['provolkaStat'] || 130, editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.provolkaCompl, params.row.quantity)}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.provolkaCompl, params.row.quantity, params.row.workDone)}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -183,7 +243,7 @@ export default function StatistikTable() {
         },
         {
             field: 'hvaStat', headerName: 'ХВА', width: columnState['hvaStat'] || 130, editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.hvaCompl, params.row.quantity)}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.hvaCompl, params.row.quantity, params.row.workDone)}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -191,7 +251,7 @@ export default function StatistikTable() {
         },
         {
             field: 'moikaStat', headerName: 'Мойка', width: columnState['moikaStat'] || 130, editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.moikaCompl, params.row.quantity)}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.moikaCompl, params.row.quantity, params.row.workDone)}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -199,7 +259,7 @@ export default function StatistikTable() {
         },
         {
             field: 'galvanikaStat', headerName: 'Гальваника', width: columnState['galvanikaStat'] || 130, editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.galvanikaCompl, params.row.quantity)}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.galvanikaCompl, params.row.quantity, params.row.workDone)}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -207,7 +267,7 @@ export default function StatistikTable() {
         },
         {
             field: 'termoplastStat', headerName: 'Термопласт', width: columnState['termoplastStat'] || 130, editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.termoplastCompl, params.row.quantity)}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.termoplastCompl, params.row.quantity, params.row.workDone)}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -215,7 +275,7 @@ export default function StatistikTable() {
         },
         {
             field: 'upakovkaStat', headerName: 'Упаковка крепеж', width: columnState['upakovkaStat'] || 130, editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.upakovkaCompl, params.row.quantity)}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.upakovkaCompl, params.row.quantity, params.row.workDone)}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -223,7 +283,7 @@ export default function StatistikTable() {
         },
         {
             field: 'guidesStat', headerName: 'Направляющие', width: columnState['guidesStat'] || 130, editable: true, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.guidesCompl, params.row.quantity)}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.guidesCompl, params.row.quantity, params.row.workDone)}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -235,9 +295,10 @@ export default function StatistikTable() {
     const fetchData = () => {
 
 
-        axios.get('/api/statistiks')
+        axios.get('/api/statistiks2')
             .then(response => {
                 const updatedRows = response.data.map((order: any) => {
+                    // console.log(order);
 
 
 
@@ -286,18 +347,40 @@ export default function StatistikTable() {
                         guidesStat: '', guidesCompl: '',
                     };
 
+                    let works: any = []
+
                     // Проходим по всем заданиям
                     order.tasks.forEach((task: any) => {
+                        // console.log(task);
+
                         const statusKeys = statusMap[task.workstation.name];
-               
+
 
                         if (statusKeys) {
                             statuses[statusKeys.stat] = `${task.completedPros} %`;   // Заполняем Stat процентами
                             statuses[statusKeys.compl] = task.completedAll; // Заполняем Compl числовым значением
+
+                            if (task.workstation.name === 'Покраска') {
+
+                            } else {
+                                if (task.workDone.length > 0) {
+                                    for (const work of task.workDone) {
+                                        // console.log(work);
+
+                                        works = [...works, {
+                                            quantity: work.quantity,
+                                            date: work.date,
+
+                                        }]
+                                    }
+                                }
+
+                            }
                         }
-                       
+
                     });
 
+                    console.log(works);
 
 
                     return {
@@ -311,6 +394,7 @@ export default function StatistikTable() {
                         isCompleted: order.isCompleted,
                         completionRate: `${Math.round(order.completionRate)} %`,
                         ...statuses, // Распространяем статусы в объект
+                        workDone: works,
                     };
                 });
                 const sortedOrders = updatedRows.sort((a, b) => a.id - b.id);
@@ -333,7 +417,7 @@ export default function StatistikTable() {
     useEffect(() => {
         fetchData(); // Первоначальная загрузка данных
 
-        const interval = setInterval(fetchData, 6000); // Обновление данных каждые 3 секунды
+        const interval = setInterval(fetchData, 7000); // Обновление данных каждые 3 секунды
 
         return () => clearInterval(interval); // Очистка интервала при размонтировании компонента
     }, []);
@@ -406,7 +490,8 @@ export default function StatistikTable() {
                         />
                     </Box>
                 </Paper>
-                {contextMenu && (
+                {renderContextMenu()}
+                {/* {contextMenu && (
                     <Paper
                         style={{
                             position: 'absolute',
@@ -426,8 +511,8 @@ export default function StatistikTable() {
                         </div>
 
 
-                    </Paper>
-                )}
+                    </Paper> */}
+                {/* )} */}
             </div>
         </div>
     )
