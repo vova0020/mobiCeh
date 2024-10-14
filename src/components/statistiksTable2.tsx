@@ -140,6 +140,7 @@ export default function StatistikTable2() {
         { field: 'launchNumber', headerName: '№ запуска', editable: true, width: columnState['launchNumber'] || 70, filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
         { field: 'orderName', headerName: 'Заказ', editable: true, width: columnState['orderName'] || 130, filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
         { field: 'nomenclature', headerName: 'Номенклатура', editable: true, width: columnState['nomenclature'] || 130, filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
+        { field: 'article', headerName: 'Артикул', editable: true, width: columnState['article'] || 100,filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
         { field: 'quantity', headerName: 'Количество', editable: false, width: columnState['quantity'] || 130, type: 'number', filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
         { field: 'pdDate', headerName: 'ПД', editable: false, width: columnState['pdDate'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         { field: 'status', headerName: 'Статус', editable: true, width: columnState['status'] || 90, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
@@ -388,6 +389,7 @@ export default function StatistikTable2() {
                         launchNumber: order.id,
                         orderName: order.orderName,
                         nomenclature: order.nomenclature,
+                        article: order.article,
                         quantity: order.quantity,
                         status: order.status,
                         pdDate: order.pdDate,
@@ -491,28 +493,7 @@ export default function StatistikTable2() {
                     </Box>
                 </Paper>
                 {renderContextMenu()}
-                {/* {contextMenu && (
-                    <Paper
-                        style={{
-                            position: 'absolute',
-                            top: contextMenu.mouseY,
-                            left: contextMenu.mouseX,
-                            zIndex: 1000,
-                            padding: '10px',
-                            backgroundColor: '#fff',
-                            border: '1px solid #ccc',
-                        }}
-                        onMouseLeave={handleClose}
-                    >   <div>
-                            Количество : {contextMenu.quantity}
-                        </div>
-                        <div>
-                            Выполнено : {contextMenu.value}
-                        </div>
-
-
-                    </Paper> */}
-                {/* )} */}
+              
             </div>
         </div>
     )
