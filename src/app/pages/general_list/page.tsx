@@ -414,7 +414,7 @@ export default function GeneralList() {
                 return 'cell-status-work';
             case 'Завершен':
                 return 'cell-status-complete';
-            case 'Отложенно':
+            case 'Отложено':
                 return 'cell-status-delayed';
             default:
                 return ''; // Ожидание: строка без класса
@@ -435,7 +435,7 @@ export default function GeneralList() {
                     onChange={(event) => params.api.setEditCellValue({ id: params.id, field: 'status', value: event.target.value })}
                     fullWidth
                 >
-                    <MenuItem value="Отложенно">Отложенно</MenuItem>
+                    <MenuItem value="Отложено">Отложено</MenuItem>
                     <MenuItem value="Активно">Активно</MenuItem>
                 </Select>
             ),

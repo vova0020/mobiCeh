@@ -39,7 +39,7 @@ export default class prismaInteraction {
                 where: { id: id },
             });
 
-            if (orders.status === 'Отложенно') {
+            if (orders.status === 'Отложено') {
                 if (order) {
 
                     // Если запись есть, обновляем ее
@@ -1419,9 +1419,11 @@ export default class prismaInteraction {
                     });
 
                     const averageCompletedPros = totalCompletedPros / order.tasks.length;
-
+                    // console.log(order.status);
                     // Определяем статус заказа если статус отложен то ничего не делать
-                    if (order.status != "Отложенно") {
+                    if (order.status != "Отложено") {
+                        console.log('Отложено');
+                        
                         if (averageCompletedPros > 99) {
                             order.status = "Завершен";
                         } else if (hasWorkInProgress) {
@@ -1438,10 +1440,17 @@ export default class prismaInteraction {
                     // Устанавливаем isCompleted в true, если completionRate > 99
                     order.isCompleted = order.completionRate > 99;
                 } else {
-                    order.status = "Ожидание";  // Если нет заданий, то статус "Ожидание"
+                    if (order.status != "Отложено") {
+                       order.status = "Ожидание";  // Если нет заданий, то статус "Ожидание" 
+                    } else {
+                        order.status = "Отложено"
+                    }
+                    
                     order.completionRate = 0;   // Если нет заданий, то completionRate = 0
                     order.isCompleted = false;  // Если нет заданий, то заказ не завершен
                 }
+                
+                
 
                 // Сохранение обновленных данных в базу
                 await prisma.order.update({
