@@ -10,6 +10,8 @@ export async function GET(req: NextRequest) {
 
         // Используем параметр для фильтрации
         const orders = await prisma.getOrdersWorkplace(work);
+        // console.log(orders);
+        
 
         return NextResponse.json(orders, { status: 200 });
     } catch (error) {

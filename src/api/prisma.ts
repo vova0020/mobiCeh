@@ -1422,7 +1422,7 @@ export default class prismaInteraction {
                     // console.log(order.status);
                     // Определяем статус заказа если статус отложен то ничего не делать
                     if (order.status != "Отложено") {
-                        console.log('Отложено');
+                        // console.log('Отложено');
                         
                         if (averageCompletedPros > 99) {
                             order.status = "Завершен";
@@ -1470,6 +1470,177 @@ export default class prismaInteraction {
             await prisma.$disconnect();
         }
     }
+
+
+
+
+
+    async updateOrderCrone() {
+        try {
+            // Найти все заказы
+            const orders = await prisma.order.findMany();
+            const allWorkstations = await prisma.workstation.findMany();
+    
+            for (const order of orders) {
+                const workStatuses = await prisma.orderWorkstationStatus.findFirst({
+                    where: {
+                        orderId: order.id,
+                    },
+                });
+    
+                if (!workStatuses) continue; // Если статусы не найдены, пропускаем заказ
+    
+                const existingTasks = await prisma.workstationTask.findMany({
+                    where: {
+                        orderId: order.id,
+                    },
+                });
+    
+                const tasksToCreate = [];
+                const tasksToDelete = [];
+    
+                // Функция для добавления или удаления заданий
+                const handleTaskUpdate = async (workstationName: string, isActive: boolean, pd: Date) => {
+                    const workstation = allWorkstations.find(ws => ws.name === workstationName);
+    
+                    if (!workstation) return;
+    
+                    const existingTask = existingTasks.find(task => task.workstationId === workstation.id);
+    
+                    if (isActive) {
+                        if (!existingTask) {
+                            // Если участок активен, но задания нет, создаем его
+                            tasksToCreate.push({
+                                orderId: order.id,
+                                workstationId: workstation.id,
+                                ostatok: order.quantity,
+                                ostatokInpt: order.quantity,
+                                completedAll: 0,
+                                completedPros: 0,
+                                completedTask: false,
+                                pd: formatDate(pd), // Преобразуем дату в строку
+                            });
+                        } else {
+                            // Если участок активен и задание уже существует, обновляем дату PD
+                            await prisma.workstationTask.update({
+                                where: { id: existingTask.id },
+                                data: {
+                                    pd: formatDate(pd),
+                                },
+                            });
+                        }
+                    } else if (existingTask) {
+                        // Если участок неактивен, но задание существует, удаляем его
+                        tasksToDelete.push(existingTask.id);
+                    }
+                };
+    
+                // Функции для разбора и форматирования дат
+                const parseDate = (dateString: string) => {
+                    const parts = dateString.split('.');
+                    return new Date(
+                        parseInt(parts[2], 10),
+                        parseInt(parts[1], 10) - 1,
+                        parseInt(parts[0], 10)
+                    );
+                };
+    
+                const formatDate = (date: Date) => {
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = date.getFullYear();
+                    return `${day}.${month}.${year}`;
+                };
+    
+                // Преобразуем строки дат в объекты Date
+                const receivedDate = parseDate(order.receivedDate);
+                const pdDate = parseDate(order.pdDate);
+                const pdDateRaskroi = parseDate(order.pdDateRaskroi);
+                const pdDateNesting = parseDate(order.pdDateNesting);
+    
+                // Рассчитываем PD для каждого участка с учетом смещений
+                const pdKromka = new Date(pdDateRaskroi);
+                pdKromka.setDate(pdKromka.getDate() + 1);
+    
+                const pdPrisadka = new Date(pdKromka);
+                pdPrisadka.setDate(pdPrisadka.getDate() + 1);
+    
+                const pdPokraska = new Date(pdDate);
+                pdPokraska.setDate(pdPokraska.getDate() - 7);
+    
+                const pdFurnitura = new Date(pdDate);
+                pdFurnitura.setDate(pdFurnitura.getDate() - 4);
+    
+                const pdKonveerSborka = new Date(pdDate);
+                pdKonveerSborka.setDate(pdKonveerSborka.getDate() - 3);
+    
+                const pdGuides = new Date(pdDate);
+                pdGuides.setDate(pdGuides.getDate() - 3);
+    
+                const pdProvolka = new Date(pdDate);
+                pdProvolka.setDate(pdProvolka.getDate() - 12);
+    
+                const pdXba = new Date(pdDate);
+                pdXba.setDate(pdXba.getDate() - 10);
+    
+                const pdMoika = new Date(pdDate);
+                pdMoika.setDate(pdMoika.getDate() - 7);
+    
+                const pdGalivanika = new Date(pdDate);
+                pdGalivanika.setDate(pdGalivanika.getDate() - 6);
+    
+                const pdTermoplast = new Date(pdDate);
+                pdTermoplast.setDate(pdTermoplast.getDate() - 4);
+    
+                const pdYpakovka = new Date(pdDate);
+                pdYpakovka.setDate(pdYpakovka.getDate() - 2);
+    
+                const pdMetal = new Date(pdDate);
+                pdMetal.setDate(pdMetal.getDate() - 2);
+    
+                // Обработка каждого участка
+                await handleTaskUpdate('Раскрой', workStatuses.raskroi, pdDateRaskroi);
+                await handleTaskUpdate('Нестинг', workStatuses.nesting, pdDateNesting);
+                await handleTaskUpdate('Зеркала', workStatuses.zerkala, receivedDate);
+                await handleTaskUpdate('Кромка', workStatuses.kromka, pdKromka);
+                await handleTaskUpdate('Присадка', workStatuses.prisadka, pdPrisadka);
+                await handleTaskUpdate('Покраска', workStatuses.pokraska, pdPokraska);
+                await handleTaskUpdate('Фурнитура', workStatuses.furnitura, pdFurnitura);
+                await handleTaskUpdate('Конвеер', workStatuses.konveer, pdKonveerSborka);
+                await handleTaskUpdate('Сборка', workStatuses.sborka, pdKonveerSborka);
+    
+                await handleTaskUpdate('Сетки', workStatuses.setki, pdKonveerSborka);
+                await handleTaskUpdate('Направляющие', workStatuses.guides, pdGuides);
+                await handleTaskUpdate('Проволока', workStatuses.provolka, pdProvolka);
+                await handleTaskUpdate('ХВА', workStatuses.xba, pdXba);
+                await handleTaskUpdate('Мойка', workStatuses.moika, pdMoika);
+                await handleTaskUpdate('Гальваника', workStatuses.galivanika, pdGalivanika);
+                await handleTaskUpdate('Термопласт', workStatuses.termoplast, pdTermoplast);
+                await handleTaskUpdate('Упаковка', workStatuses.ypakovka, pdYpakovka);
+                await handleTaskUpdate('Металл', workStatuses.metal, pdMetal);
+    
+                // Создание новых задач
+                if (tasksToCreate.length > 0) {
+                    await prisma.workstationTask.createMany({ data: tasksToCreate });
+                }
+    
+                // Удаление ненужных задач
+                if (tasksToDelete.length > 0) {
+                    await prisma.workstationTask.deleteMany({
+                        where: {
+                            id: { in: tasksToDelete },
+                        },
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Ошибка при обновлении данных:', error);
+            throw error;
+        } finally {
+            await prisma.$disconnect();
+        }
+    }
+    
 
 }
 

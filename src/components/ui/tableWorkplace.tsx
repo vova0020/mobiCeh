@@ -99,7 +99,7 @@ export default function TableWorkplace({ workData }: { workData: string }) {
         axios.get('/api/workplace', { params })
             .then(response => {
                 const updatedRows = response.data.map((order: any) => {
-                    console.log(order.tasks[0].pd);
+                    // console.log(order.tasks[0].pd);
                     
                     const receivedDateParts = order.tasks[0].pd.split('.');
                     const receivedDate = new Date(

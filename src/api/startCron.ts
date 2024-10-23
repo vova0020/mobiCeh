@@ -14,9 +14,12 @@ const prisma = new prismaInteraction();
 // }
 export async function startCron() {
     // Запуск задачи каждые 3 секунд
-    console.log('Сработал');
+    // console.log('Сработал');
     
     setInterval(async () => {
      await prisma.croneTable();
     }, 10000);
+    setInterval(async () => {
+     await prisma.updateOrderCrone();
+    }, 100000);
   }
