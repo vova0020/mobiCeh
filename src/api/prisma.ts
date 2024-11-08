@@ -31,8 +31,8 @@ export default class prismaInteraction {
 
     // Метод для обновления заказа 
     async updateOrder(id: number, orders: any, workStatuses: any) {
-      
-        
+
+
         try {
             // Найти соответствующий участок по названию
             const order = await prisma.order.findFirst({
@@ -69,7 +69,7 @@ export default class prismaInteraction {
                         orderId: id,
                     },
                 });
-               
+
 
                 if (workStatus) {
                     // Если запись есть, обновляем ее
@@ -97,7 +97,7 @@ export default class prismaInteraction {
                         },
                     });
 
-                
+                    this.croneTable2(id);
 
                 } else {
                     throw new Error('Заказ не найден');
@@ -108,14 +108,14 @@ export default class prismaInteraction {
                             orderId: order.id,
                         },
                     });
-                
+
                     console.log(`Удалено записей: ${deletedTasks.count}`);
                 } catch (error) {
                     console.error('Ошибка при удалении записей:', error);
                 }
             } else if (orders.status === 'Активно') {
                 if (order) {
-                
+
                     // Если запись есть, обновляем ее
                     await prisma.order.update({
                         where: { id: id },
@@ -167,15 +167,15 @@ export default class prismaInteraction {
                             ypakovka: workStatuses.ypakovka,
                         },
                     });
-    
-    
+
+
                 } else {
                     throw new Error('Заказ не найден');
                 }
 
-            } else{
+            } else {
                 if (order) {
-                
+
                     // Если запись есть, обновляем ее
                     await prisma.order.update({
                         where: { id: id },
@@ -202,7 +202,7 @@ export default class prismaInteraction {
                         orderId: id,
                     },
                 });
-                
+
                 if (workStatus) {
                     // Если запись есть, обновляем ее
                     await prisma.orderWorkstationStatus.update({
@@ -228,8 +228,8 @@ export default class prismaInteraction {
                             ypakovka: workStatuses.ypakovka,
                         },
                     });
-    
-    
+
+
                 } else {
                     throw new Error('Заказ не найден');
                 }
@@ -639,6 +639,7 @@ export default class prismaInteraction {
                 const updatedOrders = await Promise.all(orders.map(async (order) => {
                     const tasks = order.tasks.map(async (task) => {
                         let previousWorkDoneRecords;
+                        let previousWorkDoneRecords2;
 
                         // Разделяем логику для запроса к workDone и workDonePokraska
                         if (work === 'Покраска') {
@@ -650,6 +651,19 @@ export default class prismaInteraction {
                                     },
                                 },
                             });
+                            previousWorkDoneRecords2 = await prisma.workDonePokraska.findMany({
+                                where: {
+                                    workstationTaskId: task.id,
+                                },
+                                orderBy: {
+                                    id: 'desc', // Сортировка по id, чтобы получить запись с самым большим id
+                                },
+                                take: 1, // Ограничиваем результат одной записью
+                            });
+
+                            // Если есть записи, выбираем последнюю (с самым большим id)
+                            const lastWorkDonePokraska = previousWorkDoneRecords2;
+
                             // Подсчитываем общее количество выполненной работы за предыдущие дни
                             const totalPreviousWorkDone = previousWorkDoneRecords.reduce((sum, work) => sum + work.enamel, 0);
 
@@ -667,6 +681,7 @@ export default class prismaInteraction {
                             return {
                                 ...task,
                                 ostatokInpt, // Добавляем значение в ответ
+                                lastWorkDonePokraska
                             };
                         } else {
                             previousWorkDoneRecords = await prisma.workDone.findMany({
@@ -757,6 +772,8 @@ export default class prismaInteraction {
             let ostatok = 0;
 
             if (workstationName === 'Покраска') {
+                console.log(doneToday);
+                
                 // Логика для участка "Покраска"
 
                 if (doneToday.shlif1Fakt != null) {
@@ -1045,6 +1062,7 @@ export default class prismaInteraction {
                     dateComplite: task.dateComplite, // Дата выполнения задания
                 },
             });
+            this.croneTable(orderId, task.id);
 
             return updatedTask;
         } catch (error) {
@@ -1234,9 +1252,12 @@ export default class prismaInteraction {
 
     // =================================CRON запросы для всех таблиц ==============================================
 
-    async croneTable() {
+    async croneTable(orderId: number, taskId: number) {
+
+
         try {
-            const tasks = await prisma.workstationTask.findMany({
+            const tasks = await prisma.workstationTask.findFirst({
+                where: { id: taskId },
                 include: {
                     workstation: true,  // Включаем связь со статусами участков
                     workDone: true,         // Включаем задания для участков
@@ -1244,145 +1265,145 @@ export default class prismaInteraction {
                 }
             })
 
-            for (const task of tasks) {
-                const completedPros = task.completedPros || 0
+            // for (const task of tasks) {
+            const completedPros = tasks.completedPros || 0
 
-                if (task.workstation.name === 'Покраска') {
-                    if (task.workDonePokraska.length > 0) {
+            if (tasks.workstation.name === 'Покраска') {
+                if (tasks.workDonePokraska.length > 0) {
 
-                        let totalPreviousWorkDone = 0;
-                        let totalWorkDone = 0;
-                        let ostatokInpt = 0;
-                        let ostatok = 0;
-                        // Получаем сегодняшнюю дату, без времени
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
+                    let totalPreviousWorkDone = 0;
+                    let totalWorkDone = 0;
+                    let ostatokInpt = 0;
+                    let ostatok = 0;
+                    // Получаем сегодняшнюю дату, без времени
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
 
-                        // Фильтруем записи, где дата меньше сегодняшнего дня
-                        const pastWorkDonePokraska = task.workDonePokraska.filter(work => {
-                            if (work.dateWork) { // Проверяем, что dateWork не null и не undefined
-                                const workDate = new Date(work.dateWork);
-                                workDate.setHours(0, 0, 0, 0); // Убираем время из сравнения
-                                return workDate < today;
-                            }
-                            return false; // Пропускаем работы без даты
-                        });
-
-
-                        // Суммируем количество quantity для всех отфильтрованных записей
-                        totalPreviousWorkDone = pastWorkDonePokraska.reduce((sum, work) => {
-                            return sum + (work.enamel || 0); // Если quantity отсутствует, прибавляем 0
-                        }, 0);
-
-                        // Получаем заказ
-                        let order = await prisma.order.findFirst({
-                            where: { id: task.orderId },
-                        });
-
-
-                        // Рассчитываем остаток для ввода, основанный на работе за предыдущие дни (ostatokInpt)
-                        ostatokInpt = (order?.quantity ?? 0) - totalPreviousWorkDone;
-
-                        // Подсчитываем общее количество выполненной работы
-                        const workDoneRecords = task.workDonePokraska
-
-                        totalWorkDone = workDoneRecords.reduce((sum, work) => sum + (work.enamel || 0), 0);
-                        ostatok = (order?.quantity ?? 0) - totalWorkDone;
-
-                        // Пересчитываем процент выполнения
-                        const completionRate = (totalWorkDone / (order?.quantity ?? 0)) * 100;
-
-                        // Определяем, завершена ли задача
-                        const completedTask = completionRate >= 100;
-
-                        task.completedAll = totalWorkDone, // Обновляем общее количество выполненных задач
-                            task.completedPros = completionRate, // Сохраняем новый процент выполнения
-                            task.ostatok = ostatok, // Обновляем остаток
-                            task.ostatokInpt = ostatokInpt, // Обновляем остаток для ввода
-                            task.completedTask = completedTask // Отмечаем задание как завершенное, если процент выполнения 100
-
-                    }
-
-                } else {
-                    if (task.workDone.length > 0) {
-                        let totalPreviousWorkDone = 0;
-                        let totalWorkDone = 0;
-                        let ostatokInpt = 0;
-                        let ostatok = 0;
-                        // Получаем сегодняшнюю дату, без времени
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-
-                        // Фильтруем записи, где дата меньше сегодняшнего дня
-                        const pastWorkDone = task.workDone.filter(work => {
-                            const workDate = new Date(work.date);
+                    // Фильтруем записи, где дата меньше сегодняшнего дня
+                    const pastWorkDonePokraska = tasks.workDonePokraska.filter(work => {
+                        if (work.dateWork) { // Проверяем, что dateWork не null и не undefined
+                            const workDate = new Date(work.dateWork);
                             workDate.setHours(0, 0, 0, 0); // Убираем время из сравнения
                             return workDate < today;
-                        });
-
-                        // Суммируем количество quantity для всех отфильтрованных записей
-                        totalPreviousWorkDone = pastWorkDone.reduce((sum, work) => {
-                            return sum + (work.quantity || 0); // Если quantity отсутствует, прибавляем 0
-                        }, 0);
-
-                        // Получаем заказ
-                        let order = await prisma.order.findFirst({
-                            where: { id: task.orderId },
-                        });
-
-
-                        // Рассчитываем остаток для ввода, основанный на работе за предыдущие дни (ostatokInpt)
-                        ostatokInpt = (order?.quantity ?? 0) - totalPreviousWorkDone;
-
-                        // Подсчитываем общее количество выполненной работы
-                        const workDoneRecords = task.workDone
-
-                        totalWorkDone = workDoneRecords.reduce((sum, work) => sum + (work.quantity || 0), 0);
-                        ostatok = (order?.quantity ?? 0) - totalWorkDone;
-
-                        // Пересчитываем процент выполнения
-                        const completionRate = (totalWorkDone / (order?.quantity ?? 0)) * 100;
-
-                        // Определяем, завершена ли задача
-                        const completedTask = completionRate >= 100;
-                        if (completedTask) {
-                            task.dateComplite = today
-                        } else {
-                            task.dateComplite = null
                         }
+                        return false; // Пропускаем работы без даты
+                    });
 
 
-                        task.completedAll = totalWorkDone, // Обновляем общее количество выполненных задач
-                            task.completedPros = completionRate, // Сохраняем новый процент выполнения
-                            task.ostatok = ostatok, // Обновляем остаток
-                            task.ostatokInpt = ostatokInpt, // Обновляем остаток для ввода
-                            task.completedTask = completedTask // Отмечаем задание как завершенное, если процент выполнения 100
+                    // Суммируем количество quantity для всех отфильтрованных записей
+                    totalPreviousWorkDone = pastWorkDonePokraska.reduce((sum, work) => {
+                        return sum + (work.enamel || 0); // Если quantity отсутствует, прибавляем 0
+                    }, 0);
 
+                    // Получаем заказ
+                    let order = await prisma.order.findFirst({
+                        where: { id: tasks.orderId },
+                    });
+
+
+                    // Рассчитываем остаток для ввода, основанный на работе за предыдущие дни (ostatokInpt)
+                    ostatokInpt = (order?.quantity ?? 0) - totalPreviousWorkDone;
+
+                    // Подсчитываем общее количество выполненной работы
+                    const workDoneRecords = tasks.workDonePokraska
+
+                    totalWorkDone = workDoneRecords.reduce((sum, work) => sum + (work.enamel || 0), 0);
+                    ostatok = (order?.quantity ?? 0) - totalWorkDone;
+
+                    // Пересчитываем процент выполнения
+                    const completionRate = (totalWorkDone / (order?.quantity ?? 0)) * 100;
+
+                    // Определяем, завершена ли задача
+                    const completedTask = completionRate >= 100;
+
+                    tasks.completedAll = totalWorkDone, // Обновляем общее количество выполненных задач
+                        tasks.completedPros = completionRate, // Сохраняем новый процент выполнения
+                        tasks.ostatok = ostatok, // Обновляем остаток
+                        tasks.ostatokInpt = ostatokInpt, // Обновляем остаток для ввода
+                        tasks.completedTask = completedTask // Отмечаем задание как завершенное, если процент выполнения 100
+
+                }
+
+            } else {
+                if (tasks.workDone.length > 0) {
+                    let totalPreviousWorkDone = 0;
+                    let totalWorkDone = 0;
+                    let ostatokInpt = 0;
+                    let ostatok = 0;
+                    // Получаем сегодняшнюю дату, без времени
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    // Фильтруем записи, где дата меньше сегодняшнего дня
+                    const pastWorkDone = tasks.workDone.filter(work => {
+                        const workDate = new Date(work.date);
+                        workDate.setHours(0, 0, 0, 0); // Убираем время из сравнения
+                        return workDate < today;
+                    });
+
+                    // Суммируем количество quantity для всех отфильтрованных записей
+                    totalPreviousWorkDone = pastWorkDone.reduce((sum, work) => {
+                        return sum + (work.quantity || 0); // Если quantity отсутствует, прибавляем 0
+                    }, 0);
+
+                    // Получаем заказ
+                    let order = await prisma.order.findFirst({
+                        where: { id: tasks.orderId },
+                    });
+
+
+                    // Рассчитываем остаток для ввода, основанный на работе за предыдущие дни (ostatokInpt)
+                    ostatokInpt = (order?.quantity ?? 0) - totalPreviousWorkDone;
+
+                    // Подсчитываем общее количество выполненной работы
+                    const workDoneRecords = tasks.workDone
+
+                    totalWorkDone = workDoneRecords.reduce((sum, work) => sum + (work.quantity || 0), 0);
+                    ostatok = (order?.quantity ?? 0) - totalWorkDone;
+
+                    // Пересчитываем процент выполнения
+                    const completionRate = (totalWorkDone / (order?.quantity ?? 0)) * 100;
+
+                    // Определяем, завершена ли задача
+                    const completedTask = completionRate >= 100;
+                    if (completedTask) {
+                        tasks.dateComplite = today
+                    } else {
+                        tasks.dateComplite = null
                     }
+
+
+                    tasks.completedAll = totalWorkDone, // Обновляем общее количество выполненных задач
+                        tasks.completedPros = completionRate, // Сохраняем новый процент выполнения
+                        tasks.ostatok = ostatok, // Обновляем остаток
+                        tasks.ostatokInpt = ostatokInpt, // Обновляем остаток для ввода
+                        tasks.completedTask = completedTask // Отмечаем задание как завершенное, если процент выполнения 100
+
+                    // }
 
                 }
 
                 if (completedPros > 99) {
-                    task.status = "Завершен";
+                    tasks.status = "Завершен";
                 }
                 if (completedPros > 1 && completedPros < 99) {
-                    task.status = "В работе";
+                    tasks.status = "В работе";
                 }
                 if (completedPros < 1) {
-                    task.status = "Ожидание";
+                    tasks.status = "Ожидание";
                 }
 
 
                 // Сохранение обновленных данных в базу
                 await prisma.workstationTask.update({
-                    where: { id: task.id },
+                    where: { id: taskId },
                     data: {
-                        status: task.status,
-                        completedAll: task.completedAll, // Обновляем общее количество выполненных задач
-                        completedPros: task.completedPros, // Сохраняем новый процент выполнения
-                        ostatok: task.ostatok, // Обновляем остаток
-                        ostatokInpt: task.ostatokInpt, // Обновляем остаток для ввода
-                        completedTask: task.completedTask, // Отмечаем задание как завершенное, если процент выполнения 100
+                        status: tasks.status,
+                        completedAll: tasks.completedAll, // Обновляем общее количество выполненных задач
+                        completedPros: tasks.completedPros, // Сохраняем новый процент выполнения
+                        ostatok: tasks.ostatok, // Обновляем остаток
+                        ostatokInpt: tasks.ostatokInpt, // Обновляем остаток для ввода
+                        completedTask: tasks.completedTask, // Отмечаем задание как завершенное, если процент выполнения 100
                         // dateComplite: task.dateComplite, // Дата выполнения задания
 
                     }
@@ -1394,7 +1415,8 @@ export default class prismaInteraction {
 
 
 
-            const orders = await prisma.order.findMany({
+            const orders = await prisma.order.findFirst({
+                where: { id: orderId },
                 include: {
                     workStatuses: true,  // Включаем связь со статусами участков
                     tasks: true          // Включаем задания для участков
@@ -1402,66 +1424,150 @@ export default class prismaInteraction {
             });
 
             // Логика для обновления статусов заказа, вычисления completionRate и isCompleted
-            for (const order of orders) {
-                if (order.tasks.length > 0) {
-                    let totalCompletedPros = 0;
-                    let hasWorkInProgress = false;
+            // for (const order of orders) {
+            if (orders.tasks.length > 0) {
+                let totalCompletedPros = 0;
+                let hasWorkInProgress = false;
 
-                    // Считаем общую сумму прогресса
-                    order.tasks.forEach(task => {
-                        const completedPros = task.completedPros || 0;
-                        totalCompletedPros += completedPros;
+                // Считаем общую сумму прогресса
+                orders.tasks.forEach(task => {
+                    const completedPros = task.completedPros || 0;
+                    totalCompletedPros += completedPros;
 
-                        // Если хотя бы одно задание имеет прогресс > 0, то статус "В работе"
-                        if (completedPros > 0) {
-                            hasWorkInProgress = true;
-                        }
-                    });
-
-                    const averageCompletedPros = totalCompletedPros / order.tasks.length;
-                    // console.log(order.status);
-                    // Определяем статус заказа если статус отложен то ничего не делать
-                    if (order.status != "Отложено") {
-                        // console.log('Отложено');
-                        
-                        if (averageCompletedPros > 99) {
-                            order.status = "Завершен";
-                        } else if (hasWorkInProgress) {
-                            order.status = "В работе";
-                        } else {
-                            order.status = "Ожидание";
-                        }
-                    }
-
-
-                    // Рассчитываем completionRate как среднее значение completedPros по всем участкам
-                    order.completionRate = averageCompletedPros;
-
-                    // Устанавливаем isCompleted в true, если completionRate > 99
-                    order.isCompleted = order.completionRate > 99;
-                } else {
-                    if (order.status != "Отложено") {
-                       order.status = "Ожидание";  // Если нет заданий, то статус "Ожидание" 
-                    } else {
-                        order.status = "Отложено"
-                    }
-                    
-                    order.completionRate = 0;   // Если нет заданий, то completionRate = 0
-                    order.isCompleted = false;  // Если нет заданий, то заказ не завершен
-                }
-                
-                
-
-                // Сохранение обновленных данных в базу
-                await prisma.order.update({
-                    where: { id: order.id },
-                    data: {
-                        status: order.status,
-                        completionRate: order.completionRate,
-                        isCompleted: order.isCompleted
+                    // Если хотя бы одно задание имеет прогресс > 0, то статус "В работе"
+                    if (completedPros > 0) {
+                        hasWorkInProgress = true;
                     }
                 });
+
+                const averageCompletedPros = totalCompletedPros / orders.tasks.length;
+                // console.log(order.status);
+                // Определяем статус заказа если статус отложен то ничего не делать
+                if (orders.status != "Отложено") {
+                    // console.log('Отложено');
+
+                    if (averageCompletedPros > 99) {
+                        orders.status = "Завершен";
+                    } else if (hasWorkInProgress) {
+                        orders.status = "В работе";
+                    } else {
+                        orders.status = "Ожидание";
+                    }
+                }
+
+
+                // Рассчитываем completionRate как среднее значение completedPros по всем участкам
+                orders.completionRate = averageCompletedPros;
+
+                // Устанавливаем isCompleted в true, если completionRate > 99
+                orders.isCompleted = orders.completionRate > 99;
+            } else {
+                if (orders.status != "Отложено") {
+                    orders.status = "Ожидание";  // Если нет заданий, то статус "Ожидание" 
+                } else {
+                    orders.status = "Отложено"
+                }
+
+                orders.completionRate = 0;   // Если нет заданий, то completionRate = 0
+                orders.isCompleted = false;  // Если нет заданий, то заказ не завершен
             }
+
+
+
+            // Сохранение обновленных данных в базу
+            await prisma.order.update({
+                where: { id: orderId },
+                data: {
+                    status: orders.status,
+                    completionRate: orders.completionRate,
+                    isCompleted: orders.isCompleted
+                }
+            });
+            // }
+
+            return orders;
+        } catch (error) {
+            console.error('Ошибка при получении данных:', error);
+        } finally {
+            await prisma.$disconnect();
+        }
+    }
+
+
+    async croneTable2(orderId: number) {
+
+
+        try {
+            
+            const orders = await prisma.order.findFirst({
+                where: { id: orderId },
+                include: {
+                    workStatuses: true,  // Включаем связь со статусами участков
+                    tasks: true          // Включаем задания для участков
+                }
+            });
+
+            // Логика для обновления статусов заказа, вычисления completionRate и isCompleted
+            // for (const order of orders) {
+            if (orders.tasks.length > 0) {
+                let totalCompletedPros = 0;
+                let hasWorkInProgress = false;
+
+                // Считаем общую сумму прогресса
+                orders.tasks.forEach(task => {
+                    const completedPros = task.completedPros || 0;
+                    totalCompletedPros += completedPros;
+
+                    // Если хотя бы одно задание имеет прогресс > 0, то статус "В работе"
+                    if (completedPros > 0) {
+                        hasWorkInProgress = true;
+                    }
+                });
+
+                const averageCompletedPros = totalCompletedPros / orders.tasks.length;
+                // console.log(order.status);
+                // Определяем статус заказа если статус отложен то ничего не делать
+                if (orders.status != "Отложено") {
+                    // console.log('Отложено');
+
+                    if (averageCompletedPros > 99) {
+                        orders.status = "Завершен";
+                    } else if (hasWorkInProgress) {
+                        orders.status = "В работе";
+                    } else {
+                        orders.status = "Ожидание";
+                    }
+                }
+
+
+                // Рассчитываем completionRate как среднее значение completedPros по всем участкам
+                orders.completionRate = averageCompletedPros;
+
+                // Устанавливаем isCompleted в true, если completionRate > 99
+                orders.isCompleted = orders.completionRate > 99;
+            } else {
+                if (orders.status != "Отложено") {
+                    orders.status = "Ожидание";  // Если нет заданий, то статус "Ожидание" 
+                } else {
+                    orders.status = "Отложено"
+                }
+
+                orders.completionRate = 0;   // Если нет заданий, то completionRate = 0
+                orders.isCompleted = false;  // Если нет заданий, то заказ не завершен
+            }
+
+
+
+            // Сохранение обновленных данных в базу
+            await prisma.order.update({
+                where: { id: orderId },
+                data: {
+                    status: orders.status,
+                    completionRate: orders.completionRate,
+                    isCompleted: orders.isCompleted
+                }
+            });
+            // }
 
             return orders;
         } catch (error) {
@@ -1473,40 +1579,38 @@ export default class prismaInteraction {
 
 
 
-
-
     async updateOrderCrone() {
         try {
             // Найти все заказы
             const orders = await prisma.order.findMany();
             const allWorkstations = await prisma.workstation.findMany();
-    
+
             for (const order of orders) {
                 const workStatuses = await prisma.orderWorkstationStatus.findFirst({
                     where: {
                         orderId: order.id,
                     },
                 });
-    
+
                 if (!workStatuses) continue; // Если статусы не найдены, пропускаем заказ
-    
+
                 const existingTasks = await prisma.workstationTask.findMany({
                     where: {
                         orderId: order.id,
                     },
                 });
-    
+
                 const tasksToCreate = [];
                 const tasksToDelete = [];
-    
+
                 // Функция для добавления или удаления заданий
                 const handleTaskUpdate = async (workstationName: string, isActive: boolean, pd: Date) => {
                     const workstation = allWorkstations.find(ws => ws.name === workstationName);
-    
+
                     if (!workstation) return;
-    
+
                     const existingTask = existingTasks.find(task => task.workstationId === workstation.id);
-    
+
                     if (isActive) {
                         if (!existingTask) {
                             // Если участок активен, но задания нет, создаем его
@@ -1534,7 +1638,7 @@ export default class prismaInteraction {
                         tasksToDelete.push(existingTask.id);
                     }
                 };
-    
+
                 // Функции для разбора и форматирования дат
                 const parseDate = (dateString: string) => {
                     const parts = dateString.split('.');
@@ -1544,60 +1648,60 @@ export default class prismaInteraction {
                         parseInt(parts[0], 10)
                     );
                 };
-    
+
                 const formatDate = (date: Date) => {
                     const day = String(date.getDate()).padStart(2, '0');
                     const month = String(date.getMonth() + 1).padStart(2, '0');
                     const year = date.getFullYear();
                     return `${day}.${month}.${year}`;
                 };
-    
+
                 // Преобразуем строки дат в объекты Date
                 const receivedDate = parseDate(order.receivedDate);
                 const pdDate = parseDate(order.pdDate);
                 const pdDateRaskroi = parseDate(order.pdDateRaskroi);
                 const pdDateNesting = parseDate(order.pdDateNesting);
-    
+
                 // Рассчитываем PD для каждого участка с учетом смещений
                 const pdKromka = new Date(pdDateRaskroi);
                 pdKromka.setDate(pdKromka.getDate() + 1);
-    
+
                 const pdPrisadka = new Date(pdKromka);
                 pdPrisadka.setDate(pdPrisadka.getDate() + 1);
-    
+
                 const pdPokraska = new Date(pdDate);
                 pdPokraska.setDate(pdPokraska.getDate() - 7);
-    
+
                 const pdFurnitura = new Date(pdDate);
                 pdFurnitura.setDate(pdFurnitura.getDate() - 4);
-    
+
                 const pdKonveerSborka = new Date(pdDate);
                 pdKonveerSborka.setDate(pdKonveerSborka.getDate() - 3);
-    
+
                 const pdGuides = new Date(pdDate);
                 pdGuides.setDate(pdGuides.getDate() - 3);
-    
+
                 const pdProvolka = new Date(pdDate);
                 pdProvolka.setDate(pdProvolka.getDate() - 12);
-    
+
                 const pdXba = new Date(pdDate);
                 pdXba.setDate(pdXba.getDate() - 10);
-    
+
                 const pdMoika = new Date(pdDate);
                 pdMoika.setDate(pdMoika.getDate() - 7);
-    
+
                 const pdGalivanika = new Date(pdDate);
                 pdGalivanika.setDate(pdGalivanika.getDate() - 6);
-    
+
                 const pdTermoplast = new Date(pdDate);
                 pdTermoplast.setDate(pdTermoplast.getDate() - 4);
-    
+
                 const pdYpakovka = new Date(pdDate);
                 pdYpakovka.setDate(pdYpakovka.getDate() - 2);
-    
+
                 const pdMetal = new Date(pdDate);
                 pdMetal.setDate(pdMetal.getDate() - 2);
-    
+
                 // Обработка каждого участка
                 await handleTaskUpdate('Раскрой', workStatuses.raskroi, pdDateRaskroi);
                 await handleTaskUpdate('Нестинг', workStatuses.nesting, pdDateNesting);
@@ -1608,7 +1712,7 @@ export default class prismaInteraction {
                 await handleTaskUpdate('Фурнитура', workStatuses.furnitura, pdFurnitura);
                 await handleTaskUpdate('Конвеер', workStatuses.konveer, pdKonveerSborka);
                 await handleTaskUpdate('Сборка', workStatuses.sborka, pdKonveerSborka);
-    
+
                 await handleTaskUpdate('Сетки', workStatuses.setki, pdKonveerSborka);
                 await handleTaskUpdate('Направляющие', workStatuses.guides, pdGuides);
                 await handleTaskUpdate('Проволока', workStatuses.provolka, pdProvolka);
@@ -1618,12 +1722,12 @@ export default class prismaInteraction {
                 await handleTaskUpdate('Термопласт', workStatuses.termoplast, pdTermoplast);
                 await handleTaskUpdate('Упаковка', workStatuses.ypakovka, pdYpakovka);
                 await handleTaskUpdate('Металл', workStatuses.metal, pdMetal);
-    
+
                 // Создание новых задач
                 if (tasksToCreate.length > 0) {
                     await prisma.workstationTask.createMany({ data: tasksToCreate });
                 }
-    
+
                 // Удаление ненужных задач
                 if (tasksToDelete.length > 0) {
                     await prisma.workstationTask.deleteMany({
@@ -1640,7 +1744,7 @@ export default class prismaInteraction {
             await prisma.$disconnect();
         }
     }
-    
+
 
 }
 

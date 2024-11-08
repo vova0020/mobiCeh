@@ -1,13 +1,14 @@
 'use client';
 /* eslint-disable */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { DataGrid, GridColDef, GridFilterModel, GridLogicOperator, GridRowModel } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
 import { ruRU } from '@mui/x-data-grid/locales/ruRU';
-import { Box, Button, Checkbox, FormControlLabel, MenuItem, Select } from '@mui/material';
+import { Alert, AlertTitle, Box, Button, Checkbox, FormControlLabel, MenuItem, Select, Snackbar } from '@mui/material';
 import axios from 'axios';
 import * as XLSX from 'xlsx';  // Импортируем библиотеку для работы с Excel
 import Navbar1 from '@/components/ui/navbar1';
+import _isEqual from 'lodash/isEqual';
 
 interface OrderRow {
     id: number;
@@ -58,8 +59,16 @@ const formatDateFromExcel = (excelDate) => {
 
 
 export default function GeneralList() {
+    // Алерт кастомный 
+    const [openSnackbar, setOpenSnackbar] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'warning'>('success');
+
+
     const [editedRowIds, setEditedRowIds] = useState<Set<number>>(new Set());
 
+    const [bazaRows, setBazaRows] = useState<OrderRow[]>([]);
+    const [historiRows, setHistoriRows] = useState<OrderRow[]>([]);
     const [rows, setRows] = useState<OrderRow[]>([]);
     const [newRowId, setNewRowId] = useState<number>(0);
     // Создайте состояние для хранения новых строк
@@ -104,7 +113,8 @@ export default function GeneralList() {
                 }));
 
                 const sortedOrders = ordersWithStatuses.sort((a, b) => a.id - b.id);
-                setRows(sortedOrders);
+                setBazaRows(sortedOrders);
+                // setRows(sortedOrders);
 
                 // Устанавливаем новый ID как максимальный ID + 1
                 const maxId = sortedOrders.length > 0 ? Math.max(...sortedOrders.map(order => order.id)) : 0;
@@ -112,11 +122,24 @@ export default function GeneralList() {
             })
             .catch(error => {
                 console.error('Ошибка при загрузке данных:', error);
+                setSnackbarMessage('Ошибка при загрузке данных');
+                setSnackbarSeverity('error');
+                setOpenSnackbar(true); // Показать Snackbar с ошибкой
             });
     }
     useEffect(() => {
         getBase()
+        const interval = setInterval(getBase, 5000); // Обновление данных каждые 3 секунды
+
+        return () => clearInterval(interval); // Очистка интервала при размонтировании компонента
     }, []);
+
+    useEffect(() => {
+        if (!_isEqual(bazaRows, historiRows)) {
+            setHistoriRows(bazaRows)
+            setRows(bazaRows);
+        }
+    }, [bazaRows]);
 
     // const fetchData = () => {
     //     axios.get('/api/createOrder')
@@ -279,7 +302,10 @@ export default function GeneralList() {
         // Проверка, если раскрой отмечен, то поле pdDateRaskroi должно быть заполнено и в правильном формате
         if (newRow.raskroi) {
             if (!newRow.pdDateRaskroi || !dateRegex.test(newRow.pdDateRaskroi.trim())) {
-                alert('Заполните корректную дату для раскроя в формате ДД.ММ.ГГГГ (например, 15.10.2024)!');
+                // alert('Заполните корректную дату для раскроя в формате ДД.ММ.ГГГГ (например, 15.10.2024)!');
+                setSnackbarMessage('Заполните корректную дату для раскроя в формате ДД.ММ.ГГГГ (например, 15.10.2024) !');
+                setSnackbarSeverity('warning');
+                setOpenSnackbar(true); // Показать Snackbar с ошибкой
                 return rows.find(row => row.id === newRow.id); // Возвращаем предыдущую строку, чтобы отменить изменение
             }
         }
@@ -287,7 +313,10 @@ export default function GeneralList() {
         // Проверка, если нестинг отмечен, то поле pdDateNesting должно быть заполнено и в правильном формате
         if (newRow.nesting) {
             if (!newRow.pdDateNesting || !dateRegex.test(newRow.pdDateNesting.trim())) {
-                alert('Заполните корректную дату для нестинга в формате ДД.ММ.ГГГГ (например, 15.10.2024)!');
+                // alert('Заполните корректную дату для нестинга в формате ДД.ММ.ГГГГ (например, 15.10.2024)!');
+                setSnackbarMessage('Заполните корректную дату для нестинга в формате ДД.ММ.ГГГГ (например, 15.10.2024) !');
+                setSnackbarSeverity('warning');
+                setOpenSnackbar(true); // Показать Snackbar с ошибкой
                 return rows.find(row => row.id === newRow.id); // Возвращаем предыдущую строку, чтобы отменить изменение
             }
         }
@@ -331,7 +360,10 @@ export default function GeneralList() {
                     };
                     await axios.post('/api/createOrder', rowToSend);
                     console.log('Данные строки успешно сохранены');
-                    alert('Добавленные строки успешно сохранены');
+                    setSnackbarMessage('Добавленные строки успешно сохранены');
+                    setSnackbarSeverity('success');
+                    setOpenSnackbar(true); // Показать Snackbar
+                    // alert('Добавленные строки успешно сохранены');
                 })
             );
             setIsNewRowAdded(false); // Скрыть кнопку "Сохранить новую строку"
@@ -339,7 +371,11 @@ export default function GeneralList() {
             await getBase()
         } catch (error) {
             console.error('Ошибка при сохранении новых строк:', error);
-            alert('Ошибка при сохранении новых строк:', error);
+            // alert('Ошибка при сохранении новых строк:', error);
+            setSnackbarMessage(`Ошибка при сохранении новых строк, ${error}`);
+            setSnackbarSeverity('error');
+            setOpenSnackbar(true); // Показать Snackbar с ошибкой
+
         }
     };
     // Сохранение изменений в существующих строках
@@ -393,7 +429,10 @@ export default function GeneralList() {
                         };
                         await axios.post(`/api/orderUpdate`, rowToSend);
                         console.log(`Данные строки с id ${row.id} успешно обновлены`);
-                        alert(`Данные № Заказа ${row.id} успешно обновлены`);
+                        // alert(`Данные № Заказа ${row.id} успешно обновлены`);
+                        setSnackbarMessage(`Данные № Заказа ${row.id} успешно обновлены`);
+                        setSnackbarSeverity('success');
+                        setOpenSnackbar(true); // Показать Snackbar с ошибкой
                     }
                 })
             );
@@ -402,7 +441,10 @@ export default function GeneralList() {
             await getBase()
         } catch (error) {
             console.error('Ошибка при сохранении изменений:', error);
-            alert('Ошибка при сохранении изменений:', error);
+            // alert('Ошибка при сохранении изменений:', error);
+            setSnackbarMessage(`Ошибка при сохранении изменений:  ${error}`);
+            setSnackbarSeverity('error');
+            setOpenSnackbar(true); // Показать Snackbar с ошибкой
         }
     };
 
@@ -516,7 +558,20 @@ export default function GeneralList() {
                     }}
                 />
             </Box>
+            {/* Snackbar для отображения уведомлений */}
+            <Snackbar
+                open={openSnackbar}
+                autoHideDuration={10000}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}  // Позиционирование
+                onClose={() => setOpenSnackbar(false)}
+            >
+                <Alert onClose={() => setOpenSnackbar(false)} severity={snackbarSeverity}>
+                    <AlertTitle>Внимание!!!</AlertTitle>
+                    {snackbarMessage}
+                </Alert>
+            </Snackbar>
         </Paper>
+
     );
 
 }

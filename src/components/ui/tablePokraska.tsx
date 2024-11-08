@@ -42,7 +42,7 @@ export default function TablePokraska({ workData }: { workData: string }) {
   const [columnState, setColumnState] = useState<any>({}); // Состояние для ширины колонок
 
   const columns: GridColDef[] = [
-    { field: 'id', headerName: '№ запуска', editable: editableStatus, width: columnState['id'] || 70, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+    { field: 'id', headerName: '№ запуска', editable: editableStatus, width: columnState['id'] || 100, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
     { field: 'actual', headerName: 'Актуальный', editable: editableStatus, width: columnState['actual'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
     { field: 'orderName', headerName: 'Заказ', editable: editableStatus, width: columnState['orderName'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
     { field: 'article', headerName: 'Артикул', editable: editableStatus, width: columnState['article'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
@@ -52,78 +52,78 @@ export default function TablePokraska({ workData }: { workData: string }) {
     { field: 'complete', headerName: 'Выполнено', width: columnState['complete'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
     { field: 'ostatok', headerName: 'Остаток', width: columnState['ostatok'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
     { field: 'completionRate', headerName: 'Выполнено %', width: columnState['completionRate'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-    { field: 'status', headerName: 'Статус', width: columnState['status'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', cellClassName: (params) => params.value === 'Просрочен' ? 'cell-status-overdue' : '', },
-    {
-      field: 'prosrok',
-      headerName: 'Дней просрочки',
-      width: columnState['prosrok'] || 130,
-      editable: editableStatus,
-      type: 'number',
-      headerClassName: 'super-app-theme--header',
-      headerAlign: 'center',
-      cellClassName: (params) =>
-        params.value > 0 ? 'cell-status-overdue' : '', // Если просрочка больше 0, добавляем класс 'cell-red'
-    }
-    ,
-    { field: 'relevant', headerName: 'Актуальных', width: columnState['relevant'] || 130, editable: editableStatus, type: 'number', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-    {
-      field: 'shlif1Plan', headerName: 'Шлифовка 1 план', width: columnState['shlif1Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
-      headerClassName: 'super-app-theme--header'
-    },
+    // { field: 'status', headerName: 'Статус', width: columnState['status'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', cellClassName: (params) => params.value === 'Просрочен' ? 'cell-status-overdue' : '', },
+    // {
+    //   field: 'prosrok',
+    //   headerName: 'Дней просрочки',
+    //   width: columnState['prosrok'] || 130,
+    //   editable: editableStatus,
+    //   type: 'number',
+    //   headerClassName: 'super-app-theme--header',
+    //   headerAlign: 'center',
+    //   cellClassName: (params) =>
+    //     params.value > 0 ? 'cell-status-overdue' : '', // Если просрочка больше 0, добавляем класс 'cell-red'
+    // }
+    // ,
+    // { field: 'relevant', headerName: 'Актуальных', width: columnState['relevant'] || 130, editable: editableStatus, type: 'number', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+    // {
+    //   field: 'shlif1Plan', headerName: 'Шлифовка 1 план', width: columnState['shlif1Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+    //   headerClassName: 'super-app-theme--header'
+    // },
     {
       field: 'shlif1Fakt', headerName: 'Шлифовка 1 факт', width: columnState['shlif1Fakt'] || 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       cellClassName: (params) =>
         params.row.ostatok === 0 ? 'cell-ostatok-zero' : 'cell-ostatok-active', headerClassName: 'super-app-theme--header'
     },
-    {
-      field: 'grunt1Plan', headerName: 'Грунт 1 план', width: columnState['grunt1Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
-      headerClassName: 'super-app-theme--header'
-    },
+    // {
+    //   field: 'grunt1Plan', headerName: 'Грунт 1 план', width: columnState['grunt1Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+    //   headerClassName: 'super-app-theme--header'
+    // },
     {
       field: 'grunt1Fakt', headerName: 'Грунт 1 факт', width: columnState['grunt1Fakt'] || 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       cellClassName: (params) =>
         params.row.ostatok === 0 ? 'cell-ostatok-zero' : 'cell-ostatok-active', headerClassName: 'super-app-theme--header'
     },
-    {
-      field: 'shlif2Plan', headerName: 'Шлифовка 2 план', width: columnState['shlif2Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
-      headerClassName: 'super-app-theme--header'
-    },
+    // {
+    //   field: 'shlif2Plan', headerName: 'Шлифовка 2 план', width: columnState['shlif2Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+    //   headerClassName: 'super-app-theme--header'
+    // },
     {
       field: 'shlif2Fakt', headerName: 'Шлифовка 2 факт', width: columnState['shlif2Fakt'] || 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       cellClassName: (params) =>
         params.row.ostatok === 0 ? 'cell-ostatok-zero' : 'cell-ostatok-active', headerClassName: 'super-app-theme--header'
     },
-    {
-      field: 'grunt2Plan', headerName: 'Грунт 2 план', width: columnState['grunt2Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
-      headerClassName: 'super-app-theme--header'
-    },
+    // {
+    //   field: 'grunt2Plan', headerName: 'Грунт 2 план', width: columnState['grunt2Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+    //   headerClassName: 'super-app-theme--header'
+    // },
     {
       field: 'grunt2Fakt', headerName: 'Грунт 2 факт', width: columnState['grunt2Fakt'] || 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       cellClassName: (params) =>
         params.row.ostatok === 0 ? 'cell-ostatok-zero' : 'cell-ostatok-active', headerClassName: 'super-app-theme--header'
     },
-    {
-      field: 'shlif3Plan', headerName: 'Шлифовка 3 план', width: columnState['shlif3Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
-      headerClassName: 'super-app-theme--header'
-    },
+    // {
+    //   field: 'shlif3Plan', headerName: 'Шлифовка 3 план', width: columnState['shlif3Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+    //   headerClassName: 'super-app-theme--header'
+    // },
     {
       field: 'shlif3Fakt', headerName: 'Шлифовка 3факт', width: columnState['shlif3Fakt'] || 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       cellClassName: (params) =>
         params.row.ostatok === 0 ? 'cell-ostatok-zero' : 'cell-ostatok-active', headerClassName: 'super-app-theme--header'
     },
-    {
-      field: 'grunt3Plan', headerName: 'Грунт 3 план', width: columnState['grunt3Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
-      headerClassName: 'super-app-theme--header'
-    },
+    // {
+    //   field: 'grunt3Plan', headerName: 'Грунт 3 план', width: columnState['grunt3Plan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+    //   headerClassName: 'super-app-theme--header'
+    // },
     {
       field: 'grunt3Fakt', headerName: 'Грунт 3 факт', width: columnState['grunt3Fakt'] || 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       cellClassName: (params) =>
         params.row.ostatok === 0 ? 'cell-ostatok-zero' : 'cell-ostatok-active', headerClassName: 'super-app-theme--header'
     },
-    {
-      field: 'emalPlan', headerName: 'Эмаль план', width: columnState['emalPlan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
-      headerClassName: 'super-app-theme--header'
-    },
+    // {
+    //   field: 'emalPlan', headerName: 'Эмаль план', width: columnState['emalPlan'] || 130, type: 'number', headerAlign: 'center', editable: false, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
+    //   headerClassName: 'super-app-theme--header'
+    // },
     {
       field: 'emalFakt', headerName: 'Эмаль факт', width: columnState['emalFakt'] || 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
       cellClassName: (params) =>
@@ -161,6 +161,8 @@ export default function TablePokraska({ workData }: { workData: string }) {
     axios.get('/api/workplace', { params })
       .then(response => {
         const updatedRows = response.data.map((order: any) => {
+          
+          
           const receivedDateParts = order.tasks[0].pd.split('.');
           const receivedDate = new Date(
             parseInt(receivedDateParts[2], 10),
@@ -180,16 +182,18 @@ export default function TablePokraska({ workData }: { workData: string }) {
 
           const today = getCurrentDate().toLocaleDateString('en-CA');
 
-          // const todayWorkDone = order.tasks[0]?.workDonePokraska
-          //   .filter((work: any) => new Date(work.date).toLocaleDateString('en-CA') === today)
-          //   .reduce((acc: number, work: any) => acc + work.quantity, 0) || 0;
+          const todayWorkDone = order.tasks[0]?.workDonePokraska
+            .filter((work: any) => new Date(work.dateWork).toLocaleDateString('en-CA') === today)
+            .reduce((acc: number, work: any) => acc + work.enamel, 0) || 0;
+            // console.log(todayWorkDone);
+            
 
           const totalWorkDone = order.tasks[0]?.workDonePokraska
-            .reduce((acc: number, work: any) => acc + work.quantity, 0) || 0;
+            .reduce((acc: number, work: any) => acc + work.enamel, 0) || 0;
 
           const ostatok = order.quantity - totalWorkDone;
           const completionRate = order.tasks[0]?.completedPros || 0;
-          console.log(order.tasks[0].pd);
+          // console.log(order.tasks[0].pd);
 
           return {
             ...order,
@@ -203,18 +207,18 @@ export default function TablePokraska({ workData }: { workData: string }) {
             ostatok: order.tasks[0].ostatok,
             completionRate: `${completionRate}%`,
             ostatokInpt: order.tasks[0]?.ostatokInpt,
-            shlif1Fakt: order.tasks[0]?.workDonePokraska[0]?.grinding1Fakt,
-            grunt1Fakt: order.tasks[0]?.workDonePokraska[0]?.ground1Fakt,
-            grunt2Fakt: order.tasks[0]?.workDonePokraska[0]?.ground2Fakt,
-            shlif2Fakt: order.tasks[0]?.workDonePokraska[0]?.grinding2Fakt,
-            shlif3Fakt: order.tasks[0]?.workDonePokraska[0]?.grinding3Fakt,
-            grunt3Fakt: order.tasks[0]?.workDonePokraska[0]?.ground3Fakt,
-            emalFakt: order.tasks[0]?.workDonePokraska[0]?.enamel,
+            shlif1Fakt: order.tasks[0]?.lastWorkDonePokraska[0]?.grinding1Fakt,
+            grunt1Fakt: order.tasks[0]?.lastWorkDonePokraska[0]?.ground1Fakt,
+            grunt2Fakt: order.tasks[0]?.lastWorkDonePokraska[0]?.ground2Fakt,
+            shlif2Fakt: order.tasks[0]?.lastWorkDonePokraska[0]?.grinding2Fakt,
+            shlif3Fakt: order.tasks[0]?.lastWorkDonePokraska[0]?.grinding3Fakt,
+            grunt3Fakt: order.tasks[0]?.lastWorkDonePokraska[0]?.ground3Fakt,
+            emalFakt: todayWorkDone
           };
         });
         const sortedOrders = updatedRows.sort((a, b) => a.id - b.id);
         // setRows(sortedOrders);
-
+        // console.log(sortedOrders);
         setRows(sortedOrders);
 
         // setRows(updatedRows);
@@ -234,11 +238,13 @@ export default function TablePokraska({ workData }: { workData: string }) {
 
 
 
-  const handleProcessRowUpdate = async (newRow: any) => {
+  const handleProcessRowUpdate = async (newRow: any, oldRow:any) => {
     try {
       const { id, shlif1Fakt, grunt1Fakt, shlif2Fakt, grunt2Fakt, shlif3Fakt, grunt3Fakt, emalFakt } = newRow;
       const ostatokInpt = newRow.tasks[0].ostatokInpt;
-
+      console.log(newRow);
+      console.log(oldRow);
+      
       const columnsWithValues = [
         { name: 'Шлифовка 1 факт', value: shlif1Fakt },
         { name: 'Грунт 1 факт', value: grunt1Fakt },
@@ -250,7 +256,9 @@ export default function TablePokraska({ workData }: { workData: string }) {
       ];
 
       for (const { name, value } of columnsWithValues) {
+        console.log(value);
         if (value > ostatokInpt) {
+                   
           alert(`Максимальное количество для выполнения в колонке "${name}": ${ostatokInpt}. Пожалуйста, обратитесь к менеджеру.`);
           throw new Error(`Превышение допустимого значения для "${name}". Максимум для сегодняшнего дня: ${ostatokInpt}`);
         }

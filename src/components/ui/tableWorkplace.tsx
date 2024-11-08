@@ -2,7 +2,7 @@
 
 /* eslint-disable */
 import React, { useEffect, useState } from 'react'
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridColumnVisibilityModel } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
 import { ruRU } from '@mui/x-data-grid/locales/ruRU';
 import axios from 'axios';
@@ -48,19 +48,21 @@ export default function TableWorkplace({ workData }: { workData: string }) {
     };
 
     const columns: GridColDef[] = [
-        { field: 'id', headerName: '№ запуска', editable: editableStatus, width: columnState['id'] || 70, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'id', headerName: '№ запуска', editable: editableStatus, width: columnState['id'] || 100, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         { field: 'actual', headerName: 'Актуальный', editable: editableStatus, width: columnState['actual'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-        { field: 'orderName', headerName: 'Заказ', editable: editableStatus, width: columnState['orderName'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'orderName', headerName: 'Заказ', editable: editableStatus, width: columnState['orderName'] || 250, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         { field: 'article', headerName: 'Артикул', editable: editableStatus, width: columnState['article'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-        { field: 'nomenclature', headerName: 'Номенклатура', editable: editableStatus, width: columnState['nomenclature'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'nomenclature', headerName: 'Номенклатура', editable: editableStatus, width: columnState['nomenclature'] || 350, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         { field: 'pd', headerName: 'ПД', editable: editableStatus, width: columnState['pd'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         { field: 'quantity', headerName: 'План', editable: editableStatus, width: columnState['quantity'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         { field: 'complete', headerName: 'Выполнено', width: columnState['complete'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         { field: 'ostatok', headerName: 'Остаток', width: columnState['ostatok'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         { field: 'completionRate', headerName: 'Выполнено %', width: columnState['completionRate'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         { field: 'status', headerName: 'Статус', width: columnState['status'] || 130, editable: editableStatus, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', cellClassName: (params) => params.value === 'Просрочен' ? 'cell-status-overdue' : '', },
-        { field: 'prosrok', headerName: 'Дней просрочки', width: columnState['prosrok'] || 130, editable: editableStatus, type: 'number', headerClassName: 'super-app-theme--header', headerAlign: 'center',cellClassName: (params) =>
-            params.value > 0 ? 'cell-status-overdue' : '', },
+        {
+            field: 'prosrok', headerName: 'Дней просрочки', width: columnState['prosrok'] || 130, editable: editableStatus, type: 'number', headerClassName: 'super-app-theme--header', headerAlign: 'center', cellClassName: (params) =>
+                params.value > 0 ? 'cell-status-overdue' : '',
+        },
         { field: 'relevant', headerName: 'Актуальных', width: columnState['relevant'] || 130, editable: editableStatus, type: 'number', headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         {
             field: 'sdel', headerName: 'Сделано', width: columnState['sdel'] || 130, type: 'number', headerAlign: 'center', editable: true, //(params) => params.row.ostatok > 0, // Ячейка редактируется только если остаток > 0
@@ -78,19 +80,19 @@ export default function TableWorkplace({ workData }: { workData: string }) {
     const getStatus = (completionRate: number, pdDate: Date, currentDate: Date): { status: string, prosrok: number } => {
         let status = 'Невыполнен';
         let prosrok = 0;
-    
+
         if (completionRate > 99) {
-          status = 'ОК';
+            status = 'ОК';
         } else {
-          if (pdDate < currentDate) {
-            status = 'Просрочен';
-            const diffTime = Math.abs(currentDate.getTime() - pdDate.getTime());
-            prosrok = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          }
+            if (pdDate < currentDate) {
+                status = 'Просрочен';
+                const diffTime = Math.abs(currentDate.getTime() - pdDate.getTime());
+                prosrok = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            }
         }
-    
+
         return { status, prosrok };
-      };
+    };
 
     const fetchData = () => {
         const params = { work: workData };
@@ -99,8 +101,8 @@ export default function TableWorkplace({ workData }: { workData: string }) {
         axios.get('/api/workplace', { params })
             .then(response => {
                 const updatedRows = response.data.map((order: any) => {
-                    // console.log(order.tasks[0].pd);
-                    
+                    console.log(order);
+
                     const receivedDateParts = order.tasks[0].pd.split('.');
                     const receivedDate = new Date(
                         parseInt(receivedDateParts[2], 10),
@@ -148,7 +150,7 @@ export default function TableWorkplace({ workData }: { workData: string }) {
                 const sortedOrders = updatedRows.sort((a, b) => a.id - b.id);
                 // setRows(sortedOrders);
                 
-                
+
                 setRows(sortedOrders);
             })
             .catch(error => {
@@ -215,6 +217,17 @@ export default function TableWorkplace({ workData }: { workData: string }) {
         }));
     };
 
+
+    const [columnVisibilityModel, setColumnVisibilityModel] =
+        React.useState<GridColumnVisibilityModel>({
+            article: false,
+            complete: false,
+            status: false,
+            prosrok: false,
+            relevant: false,
+
+        });
+
     return (
         <div>
             <div
@@ -249,6 +262,10 @@ export default function TableWorkplace({ workData }: { workData: string }) {
                         onProcessRowUpdateError={(error) => console.error('Ошибка при обновлении строки:', error)}
                         getRowClassName={getRowClassName}
                         onColumnWidthChange={handleColumnResize}
+                        columnVisibilityModel={columnVisibilityModel}
+                        onColumnVisibilityModelChange={(newModel) =>
+                            setColumnVisibilityModel(newModel)
+                        }
                         sx={{
                             '& .super-app-theme--header': {
                                 backgroundColor: '#bceaff',
