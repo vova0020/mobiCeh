@@ -1,7 +1,7 @@
 
-import prismaInteraction from '@/api/prisma';
+// import prismaInteraction from '@/api/prisma';
 
-const prisma = new prismaInteraction();
+// const prisma = new prismaInteraction();
 
 // export async function GET() {
 //     try {
@@ -12,14 +12,14 @@ const prisma = new prismaInteraction();
 //         return NextResponse.json({ message: 'Ошибка при получении обновлений' }, { status: 500 });
 //     }
 // }
-export async function startCron() {
-    // Запуск задачи каждые 3 секунд
-    // console.log('Сработал');
+// export async function startCron() {
+//     // Запуск задачи каждые 3 секунд
+//     // console.log('Сработал');
     
-    setInterval(async () => {
-     await prisma.croneTable();
-    }, 10000);
-    setInterval(async () => {
-     await prisma.updateOrderCrone();
-    }, 100000);
-  }
+//     setInterval(async () => {
+//      await prisma.croneTable();
+//     }, 10000);
+//     setInterval(async () => {
+//      await prisma.updateOrderCrone();
+//     }, 100000);
+//   }
