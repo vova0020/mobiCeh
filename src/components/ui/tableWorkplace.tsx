@@ -106,7 +106,10 @@ export default function TableWorkplace({ workData }: { workData: string }) {
         axios.get('/api/workplace', { params })
             .then(response => {
                 const updatedRows = response.data.map((order: any) => {
-                    console.log(order);
+                    
+                    // if (order.tasks.length <1) {
+                    //     console.log(order.id);
+                    // }
 
                     const receivedDateParts = order.tasks[0].pd.split('.');
                     const receivedDate = new Date(

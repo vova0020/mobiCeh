@@ -6,7 +6,7 @@ const prisma = new prismaInteraction();
 export async function GET() {
     try {
         
-        const orders = await prisma.getAdminOrders();
+        const orders = await prisma.updateOrderCrone();
         return NextResponse.json(orders, { status: 200 });
     } catch (error) {
         console.error('Ошибка при получении заказов:', error);
