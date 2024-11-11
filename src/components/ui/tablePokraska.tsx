@@ -2,11 +2,15 @@
 
 /* eslint-disable */
 import React, { useEffect, useState } from 'react'
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
 import { ruRU } from '@mui/x-data-grid/locales/ruRU';
 import axios from 'axios';
 import { Box } from '@mui/material';
+import { DataGrid, GridColDef, gridExpandedSortedRowIdsSelector } from '@mui/x-data-grid'
+import { DataGridPro, GridToolbar } from '@mui/x-data-grid-pro';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+import { useGridApiRef } from '@mui/x-data-grid';
 
 interface OrderRow {
   id: number;
@@ -35,6 +39,8 @@ interface OrderRow {
 
 
 export default function TablePokraska({ workData }: { workData: string }) {
+  const apiRef = useGridApiRef();
+  const [columnVisibilityModel, setColumnVisibilityModel] = useState({});
 
   const [completedData, setCompletedData] = useState(0)
   const [editableStatus, setEditableStatus] = useState(false);
@@ -161,8 +167,8 @@ export default function TablePokraska({ workData }: { workData: string }) {
     axios.get('/api/workplace', { params })
       .then(response => {
         const updatedRows = response.data.map((order: any) => {
-          
-          
+
+
           const receivedDateParts = order.tasks[0].pd.split('.');
           const receivedDate = new Date(
             parseInt(receivedDateParts[2], 10),
@@ -185,8 +191,8 @@ export default function TablePokraska({ workData }: { workData: string }) {
           const todayWorkDone = order.tasks[0]?.workDonePokraska
             .filter((work: any) => new Date(work.dateWork).toLocaleDateString('en-CA') === today)
             .reduce((acc: number, work: any) => acc + work.enamel, 0) || 0;
-            // console.log(todayWorkDone);
-            
+          // console.log(todayWorkDone);
+
 
           const totalWorkDone = order.tasks[0]?.workDonePokraska
             .reduce((acc: number, work: any) => acc + work.enamel, 0) || 0;
@@ -238,13 +244,13 @@ export default function TablePokraska({ workData }: { workData: string }) {
 
 
 
-  const handleProcessRowUpdate = async (newRow: any, oldRow:any) => {
+  const handleProcessRowUpdate = async (newRow: any, oldRow: any) => {
     try {
       const { id, shlif1Fakt, grunt1Fakt, shlif2Fakt, grunt2Fakt, shlif3Fakt, grunt3Fakt, emalFakt } = newRow;
       const ostatokInpt = newRow.tasks[0].ostatokInpt;
       console.log(newRow);
       console.log(oldRow);
-      
+
       const columnsWithValues = [
         { name: 'Шлифовка 1 факт', value: shlif1Fakt },
         { name: 'Грунт 1 факт', value: grunt1Fakt },
@@ -258,7 +264,7 @@ export default function TablePokraska({ workData }: { workData: string }) {
       for (const { name, value } of columnsWithValues) {
         console.log(value);
         if (value > ostatokInpt) {
-                   
+
           alert(`Максимальное количество для выполнения в колонке "${name}": ${ostatokInpt}. Пожалуйста, обратитесь к менеджеру.`);
           throw new Error(`Превышение допустимого значения для "${name}". Максимум для сегодняшнего дня: ${ostatokInpt}`);
         }
@@ -317,6 +323,44 @@ export default function TablePokraska({ workData }: { workData: string }) {
 
     return ''; // Без дополнительных стилей для остальных случаев
   };
+  const exportToExcel = () => {
+    // Проверка на существование apiRef и его current
+    if (!apiRef.current) {
+        console.error('apiRef is not initialized');
+        return;
+    }
+
+    // Получаем идентификаторы развернутых строк
+    const expandedRowIds = gridExpandedSortedRowIdsSelector(apiRef);
+
+    // Получаем видимые колонки
+    const visibleColumns = columns.filter(column => columnVisibilityModel[column.field] !== false);
+    const columnHeaders = visibleColumns.map(column => column.headerName);
+
+    // Фильтруем строки по id из expandedRowIds
+    const filteredRows = rows
+        .filter(row => expandedRowIds.includes(row.id)) // Оставляем только развернутые строки
+        .sort((a, b) => expandedRowIds.indexOf(a.id) - expandedRowIds.indexOf(b.id)); // Сортируем по порядку из expandedRowIds
+
+    // Формируем строки данных только с видимыми колонками для отфильтрованных строк
+    const formattedRows = filteredRows.map(row => {
+        const formattedRow = {};
+        visibleColumns.forEach(column => {
+            formattedRow[column.headerName] = row[column.field];
+        });
+        return formattedRow;
+    });
+
+    // Преобразуем данные в формат Excel
+    const worksheet = XLSX.utils.json_to_sheet(formattedRows, { header: columnHeaders });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
+
+    // Сохраняем Excel
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+    saveAs(blob, 'data.xlsx');
+};
 
   return (
     <div>
@@ -343,7 +387,40 @@ export default function TablePokraska({ workData }: { workData: string }) {
 
       <Paper style={{ height: '100%', width: '100%', margin: '20px 0' }}>
         <Box sx={{ height: 'calc(100vh - 200px)', width: '100%', overflow: 'auto' }}>
-          <DataGrid
+          {/* Кнопка для экспорта */}
+          <button
+            onClick={exportToExcel}
+            style={{
+              padding: '5px 10px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              color: '#fff',
+              background: 'linear-gradient(45deg, #4CAF50, #8BC34A)',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+              marginBottom: '10px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(45deg, #66BB6A, #AED581)';
+              e.currentTarget.style.boxShadow = '0px 6px 8px rgba(0, 0, 0, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(45deg, #4CAF50, #8BC34A)';
+              e.currentTarget.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = 'scale(0.95)';
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            Экспорт в Excel
+          </button>
+          <DataGridPro
             rows={rows}
             columns={columns}
             pageSize={100}
@@ -352,6 +429,11 @@ export default function TablePokraska({ workData }: { workData: string }) {
             onProcessRowUpdateError={(error) => console.error('Ошибка при обновлении строки:', error)}
             onColumnWidthChange={handleColumnResize}
             getRowClassName={getRowClassName}
+            apiRef={apiRef}
+            columnVisibilityModel={columnVisibilityModel}
+            onColumnVisibilityModelChange={(newModel) =>
+              setColumnVisibilityModel(newModel)
+            }
 
             sx={{
               '& .super-app-theme--header': {

@@ -135,10 +135,13 @@ export default function GeneralList() {
     }, []);
 
     useEffect(() => {
-        if (!_isEqual(bazaRows, historiRows)) {
+        if (!isEditing) {
+            if (!_isEqual(bazaRows, historiRows)) {
             setHistoriRows(bazaRows)
             setRows(bazaRows);
         }
+        }
+        
     }, [bazaRows]);
 
     // const fetchData = () => {
@@ -483,7 +486,7 @@ export default function GeneralList() {
             ),
         },
         { field: 'isCompleted', headerName: 'Завершен', editable: true, type: 'boolean', width: columnState['isCompleted'] || 80 },
-        { field: 'completionRate', headerName: '% Выполнения', editable: true, type: 'number', width: columnState['completionRate'] || 130 },
+        { field: 'completionRate', headerName: '% Выполнения', editable: true, type: 'string', width: columnState['completionRate'] || 130 },
         { field: 'nomenclature', headerName: 'Номенклатура', editable: true, width: columnState['nomenclature'] || 150 },
         { field: 'quantity', headerName: 'Количество', editable: true, type: 'number', width: columnState['quantity'] || 90 },
         { field: 'pdDate', headerName: 'План. дата', editable: true, width: columnState['pdDate'] || 130 },

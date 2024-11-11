@@ -11,15 +11,6 @@ import MenuItem from '@mui/material/MenuItem';
 import { useRouter, usePathname } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode'; // Импортируем библиотеку для декодирования токена
 import { Box } from '@mui/material'; // Для контейнера кнопок
-import Drawer from '@mui/material/Drawer';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import InboxIcon from '@mui/icons-material/MoveToInbox';
-import MailIcon from '@mui/icons-material/Mail';
-import MenuIcon from '@mui/icons-material/Menu'; // Иконка для меню
 
 interface DecodedToken {
   role: string;
@@ -32,7 +23,6 @@ const Navbar1: React.FC = () => {
   const [token, setToken] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [sector, setSector] = useState<string | null>(null);
-  const [mobileOpen, setMobileOpen] = useState(false); // Для мобильного меню
   const router = useRouter();
   const pathname = usePathname();
 
@@ -72,50 +62,35 @@ const Navbar1: React.FC = () => {
     textDecoration: 'none'
   });
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
+  return (
+    <div style={{display:'flex', justifyContent:'center'}}>
+      <AppBar position="static" sx={{ backgroundColor: '#cbc8c8', borderRadius: 5, width: '99%' }}>
+        <Toolbar sx={{ color: 'black' }}>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            {/* MyApp */}
+          </Typography>
+          {/* Общие элементы для всех пользователей */}
+          {/* {role && (
+          <Link href="/" passHref>
+            <Button sx={linkStyle('/')} color="inherit">Главная</Button>
+          </Link>
+        )} */}
 
-  const drawerWidth = 240;
-
-  const drawer = (
-    <div>
-      <Toolbar />
-      <List>
-        {/* Элементы для Руководства */}
-        {role === 'Руководство' && (
-          <>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href="/pages/general_list" sx={linkStyle('/pages/general_list')}>
-                <ListItemIcon>
-                  
-                </ListItemIcon>
-                <ListItemText primary="Создание заказа" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href="/pages/adminka" sx={linkStyle('/pages/adminka')}>
-                <ListItemIcon>
-                 
-                </ListItemIcon>
-                <ListItemText primary="Админка" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href="/pages/statistik2" sx={linkStyle('/pages/statistik2')}>
-                <ListItemIcon>
-                 
-                </ListItemIcon>
-                <ListItemText primary="Статистика 2" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton onClick={(event) => handleMenuClick(event, 'manufacturing')}>
-                <ListItemIcon>
-                 
-                </ListItemIcon>
-                <ListItemText primary="Основное производство" />
-              </ListItemButton>
+          {/* Элементы для Руководства */}
+          {role === 'Руководство' && (
+            <>
+              <Link href="/pages/general_list" passHref>
+                <Button sx={linkStyle('/pages/general_list')} color="inherit">Создание заказа</Button>
+              </Link>
+              <Link href="/pages/adminka" passHref>
+                <Button sx={linkStyle('/pages/adminka')} color="inherit">Админка</Button>
+              </Link>
+              <Link href="/pages/statistik2" passHref>
+                <Button sx={linkStyle('/pages/statistik2')} color="inherit">Статистика 2</Button>
+              </Link>
+              <Button color="inherit" onClick={(event) => handleMenuClick(event, 'manufacturing')}>
+                Основное производство
+              </Button>
               <Menu anchorEl={anchorEl} open={openMenu === 'manufacturing'} onClose={handleMenuClose}>
                 <MenuItem onClick={handleMenuClose}>
                   <Link href="/pages/Раскрой" passHref>
@@ -142,6 +117,7 @@ const Navbar1: React.FC = () => {
                     Присадка
                   </Link>
                 </MenuItem>
+
                 <MenuItem onClick={handleMenuClose}>
                   <Link href="/pages/Металлокаркасы" passHref>
                     Металлокаркасы
@@ -168,31 +144,25 @@ const Navbar1: React.FC = () => {
                   </Link>
                 </MenuItem>
               </Menu>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href="/pages/Сетки" sx={linkStyle('/pages/Сетки')}>
-                <ListItemIcon>
-                 
-                </ListItemIcon>
-                <ListItemText primary="Сетки" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href="/pages/Направляющие" sx={linkStyle('/pages/Направляющие')}>
-                <ListItemIcon>
-                 
-                </ListItemIcon>
-                <ListItemText primary="Направляющие" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton onClick={(event) => handleMenuClick(event, 'finishing')}>
-                <ListItemIcon>
-                 
-                </ListItemIcon>
-                <ListItemText primary="ХВА" />
-              </ListItemButton>
-              <Menu anchorEl={anchorEl} open={openMenu === 'finishing'} onClose={handleMenuClose}>
+
+              <Link href="/pages/Сетки" passHref>
+                <Button sx={linkStyle('/pages/Сетки')} color="inherit">Сетки</Button>
+              </Link>
+              <Link href="/pages/Направляющие" passHref>
+                <Button sx={linkStyle('/pages/Направляющие')} color="inherit">Направляющие</Button>
+              </Link>
+
+              <Button
+                color="inherit"
+                onClick={(event) => handleMenuClick(event, 'finishing')}>
+                ХВА
+              </Button>
+              <Menu
+                anchorEl={anchorEl}
+                open={openMenu === 'finishing'}
+                onClose={handleMenuClose}
+              >
+                {/* ХВА */}
                 <MenuItem onClick={handleMenuClose}>
                   <Link href="/pages/Подготовка" passHref>
                     Подготовка
@@ -224,128 +194,82 @@ const Navbar1: React.FC = () => {
                   </Link>
                 </MenuItem>
               </Menu>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href="/pages/createUsers" sx={linkStyle('/pages/createUsers')}>
-                <ListItemIcon>
-                 
-                </ListItemIcon>
-                <ListItemText primary="Создание пользователя" />
-              </ListItemButton>
-            </ListItem>
-          </>
-        )}
+              <Link href="/pages/createUsers" passHref>
+                <Button sx={linkStyle('/pages/createUsers')} color="inherit">Создание пользователя</Button>
+              </Link>
+            </>
 
-        {role === 'Мастер участка' && (sector === 'Конвеер' || sector === 'Сборка') ? (
-          <>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href={`/pages/Конвеер`} sx={linkStyle('/pages/Конвеер')}>
-                <ListItemIcon>
-                  
-                </ListItemIcon>
-                <ListItemText primary="Конвеер" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href={`/pages/Сборка`} sx={linkStyle('/pages/Сборка')}>
-                <ListItemIcon>
-                 
-                </ListItemIcon>
-                <ListItemText primary="Сборка" />
-              </ListItemButton>
-            </ListItem>
-          </>
-        ) : (
-          <>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href={`/pages/${sector}`} sx={linkStyle(`/pages/${sector}`)}>
-                <ListItemIcon>
-                 
-                </ListItemIcon>
-                <ListItemText primary={sector} />
-              </ListItemButton>
-            </ListItem>
-          </>
-        )}
+          )}
 
-        {/* Элементы для всех ролей кроме Руководства */}
-        {/* 'Мастер Нестинг-Присадка', 'Мастер Кромки-Присадки', ' Мастер ХВА' */}
-        {role === 'Мастер Нестинг-Присадка' && (
-          <>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href="/pages/Нестинг" sx={linkStyle('/pages/Нестинг')}>
-                <ListItemIcon>
-                  
-                </ListItemIcon>
-                <ListItemText primary="Нестинг" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href="/pages/Присадка" sx={linkStyle('/pages/Присадка')}>
-                <ListItemIcon>
-                 
-                </ListItemIcon>
-                <ListItemText primary="Присадка" />
-              </ListItemButton>
-            </ListItem>
-          </>
-        )}
+          {role === 'Мастер участка' && (sector === 'Конвеер' || sector === 'Сборка') ? (
+            <>
+              <Link href={`/pages/Конвеер`} passHref>
+                <Button sx={linkStyle('/pages/Конвеер')} color="inherit">Конвеер</Button>
+              </Link>
+              <Link href={`/pages/Сборка`} passHref>
+                <Button sx={linkStyle('/pages/Сборка')} color="inherit">Сборка</Button>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href={`/pages/${sector}`} passHref>
+                <Button sx={linkStyle(`/pages/${sector}`)} color="inherit">{sector}</Button>
+              </Link>
+            </>
+          )}
 
-        {role === 'Технолог' && (
-          <>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href="/pages/general_list" sx={linkStyle('/pages/general_list')}>
-                <ListItemIcon>
-                  
-                </ListItemIcon>
-                <ListItemText primary="Создание заказа" />
-              </ListItemButton>
-            </ListItem>
-          </>
-        )}
-        {role === 'Менеджер' && (
-          <>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href="/pages/general_list" sx={linkStyle('/pages/general_list')}>
-                <ListItemIcon>
-                  
-                </ListItemIcon>
-                <ListItemText primary="Создание заказа" />
-              </ListItemButton>
-            </ListItem>
-          </>
-        )}
+          {/* Элементы для всех ролей кроме Руководства */}
+          {/* 'Мастер Нестинг-Присадка', 'Мастер Кромки-Присадки', ' Мастер ХВА' */}
+          {role === 'Мастер Нестинг-Присадка' && (
+            <>
+              <Link href="/pages/Нестинг" passHref>
+                <Button sx={linkStyle('/pages/Нестинг')} color="inherit">Нестинг</Button>
+              </Link>
+              <Link href="/pages/Присадка" passHref>
+                <Button sx={linkStyle('/pages/Присадка')} color="inherit">Присадка</Button>
+              </Link>
 
-        {role === 'Мастер Кромки-Присадки' && (
-          <>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href="/pages/Кромка" sx={linkStyle('/pages/Кромка')}>
-                <ListItemIcon>
-                  
-                </ListItemIcon>
-                <ListItemText primary="Кромка" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href="/pages/Присадка" sx={linkStyle('/pages/Присадка')}>
-                <ListItemIcon>
-                 
-                </ListItemIcon>
-                <ListItemText primary="Присадка" />
-              </ListItemButton>
-            </ListItem>
-          </>
-        )}
-        {role === ' Мастер ХВА' && (
-          <>
-            <ListItem disablePadding>
-              <ListItemButton onClick={(event) => handleMenuClick(event, 'finishing')}>
-                <ListItemIcon>
-                 
-                </ListItemIcon>
-                <ListItemText primary="ХВА" />
-              </ListItemButton>
-              <Menu anchorEl={anchorEl} open={openMenu === 'finishing'} onClose={handleMenuClose}>
+            </>
+          )}
+
+          {role === 'Технолог' && (
+            <>
+              <Link href="/pages/general_list" passHref>
+                <Button sx={linkStyle('/pages/general_list')} color="inherit">Создание заказа</Button>
+              </Link>
+            </>
+          )}
+          {role === 'Менеджер' && (
+            <>
+              <Link href="/pages/general_list" passHref>
+                <Button sx={linkStyle('/pages/general_list')} color="inherit">Создание заказа</Button>
+              </Link>
+            </>
+          )}
+
+          {role === 'Мастер Кромки-Присадки' && (
+            <>
+              <Link href="/pages/Кромка" passHref>
+                <Button sx={linkStyle('/pages/Кромка')} color="inherit">Кромка</Button>
+              </Link>
+              <Link href="/pages/Присадка" passHref>
+                <Button sx={linkStyle('/pages/Присадка')} color="inherit">Присадка</Button>
+              </Link>
+            </>
+          )}
+          {role === ' Мастер ХВА' && (
+            <>
+              <Button
+                color="inherit"
+                onClick={(event) => handleMenuClick(event, 'finishing')}>
+                ХВА
+              </Button>
+              <Menu
+                anchorEl={anchorEl}
+                open={openMenu === 'finishing'}
+                onClose={handleMenuClose}
+              >
+                {/* ХВА */}
                 <MenuItem onClick={handleMenuClose}>
                   <Link href="/pages/Подготовка" passHref>
                     Подготовка
@@ -377,90 +301,35 @@ const Navbar1: React.FC = () => {
                   </Link>
                 </MenuItem>
               </Menu>
-            </ListItem>
-          </>
-        )}
+            </>
+          )}
 
-        {role === 'Мастер Кромки-Присадки' && (
-          <>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href="/pages/Кромка" sx={linkStyle('/pages/Кромка')}>
-                <ListItemIcon>
-                  
-                </ListItemIcon>
-                <ListItemText primary="Кромка" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href="/pages/Присадка" sx={linkStyle('/pages/Присадка')}>
-                <ListItemIcon>
-                 
-                </ListItemIcon>
-                <ListItemText primary="Присадка" />
-              </ListItemButton>
-            </ListItem>
-          </>
-        )}
-        {role && (
-          <>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href="/pages/statistik" sx={linkStyle('/pages/statistik')}>
-                <ListItemIcon>
-                 
-                </ListItemIcon>
-                <ListItemText primary="Статистика" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton onClick={handleLogout}>
-                <ListItemIcon>
-                 
-                </ListItemIcon>
-                <ListItemText primary="Выйти" />
-              </ListItemButton>
-            </ListItem>
-          </>
-        )}
-      </List>
-    </div>
-  );
+          {role === 'Мастер Кромки-Присадки' && (
+            <>
+              <Link href="/pages/Кромка" passHref>
+                <Button sx={linkStyle('/pages/Кромка')} color="inherit">Кромка</Button>
+              </Link>
+              <Link href="/pages/Присадка" passHref>
+                <Button sx={linkStyle('/pages/Присадка')} color="inherit">Присадка</Button>
+              </Link>
+            </>
+          )}
 
-  return (
-    <div style={{ display: 'flex' }}>
-      <AppBar position="static" sx={{ backgroundColor: '#cbc8c8', borderRadius: 5, width: '99%' }}>
-        <Toolbar sx={{ color: 'black' }}>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            {/* MyApp */}
-          </Typography>
-
-          <Button onClick={handleDrawerToggle} sx={{ display: { xs: 'block', sm: 'none' } }}>
-            <MenuIcon />
-          </Button>
-
-          {/* Общие элементы для всех пользователей */}
-          {/* {role && (
-          <Link href="/" passHref>
-            <Button sx={linkStyle('/')} color="inherit">Главная</Button>
-          </Link>
-        )} */}
+          {/* Кнопка Выйти */}
+          {role && (
+            <>
+              <Link href="/pages/statistik" passHref>
+                <Button sx={linkStyle('/pages/statistik')} color="inherit">Статистика</Button>
+              </Link>
+              <Button color="inherit" onClick={handleLogout}>
+                Выйти
+              </Button>
+            </>
+          )}
         </Toolbar>
       </AppBar>
-      <Drawer
-        variant="temporary"
-         anchor="right"
-        open={mobileOpen}
-        onClose={handleDrawerToggle}
-        ModalProps={{
-          keepMounted: true, // Better open performance on mobile.
-        }}
-        sx={{
-          display: { xs: 'block', sm: 'none' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-        }}
-      >
-        {drawer}
-      </Drawer>
     </div>
+
   );
 };
 

@@ -2,10 +2,15 @@
 
 /* eslint-disable */
 import { Box, Paper } from '@mui/material'
-import { DataGrid, GridColDef } from '@mui/x-data-grid'
+import { DataGrid, GridColDef, gridExpandedSortedRowIdsSelector } from '@mui/x-data-grid'
+import { DataGridPro, GridToolbar } from '@mui/x-data-grid-pro';
 import { ruRU } from '@mui/x-data-grid/locales/ruRU';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react'
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+import { useGridApiRef } from '@mui/x-data-grid';
+
 
 interface OrderRow {
     id: number;
@@ -55,7 +60,8 @@ interface OrderRow {
 }
 
 export default function StatistikTable() {
-
+    const apiRef = useGridApiRef();
+    const [columnVisibilityModel, setColumnVisibilityModel] = useState({});
     const [rows, setRows] = useState<OrderRow[]>([]);
     const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number; value: number | null; quantity: number | null } | null>(null);
     const [columnState, setColumnState] = useState<any>({}); // Состояние для ширины колонок
@@ -85,7 +91,7 @@ export default function StatistikTable() {
         { field: 'pdDate', headerName: 'ПД', editable: false, width: columnState['pdDate'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         { field: 'status', headerName: 'Статус', editable: true, width: columnState['status'] || 90, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         { field: 'isCompleted', headerName: 'Завершен', editable: true, type: 'boolean', width: columnState['isCompleted'] || 80, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
-        { field: 'completionRate', headerName: '% Выполнения', editable: true, type: 'number', width: columnState['completionRate'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
+        { field: 'completionRate', headerName: '% Выполнения', editable: true, type: 'string', width: columnState['completionRate'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         {
             field: 'raskroiStat', headerName: 'Раскрой', width: columnState['raskroiStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
                 <div onContextMenu={(event) => handleContextMenu(event, params.row.raskroiCompl, params.row.quantity)}>
@@ -290,13 +296,13 @@ export default function StatistikTable() {
                     // Проходим по всем заданиям
                     order.tasks.forEach((task: any) => {
                         const statusKeys = statusMap[task.workstation.name];
-               
+
 
                         if (statusKeys) {
                             statuses[statusKeys.stat] = `${task.completedPros} %`;   // Заполняем Stat процентами
                             statuses[statusKeys.compl] = task.completedAll; // Заполняем Compl числовым значением
                         }
-                       
+
                     });
 
 
@@ -362,22 +368,104 @@ export default function StatistikTable() {
             [params.colDef.field]: params.width,
         }));
     };
+    const exportToExcel = () => {
+        // Проверка на существование apiRef и его current
+        if (!apiRef.current) {
+            console.error('apiRef is not initialized');
+            return;
+        }
+
+        // Получаем идентификаторы развернутых строк
+        const expandedRowIds = gridExpandedSortedRowIdsSelector(apiRef);
+
+        // Получаем видимые колонки
+        const visibleColumns = columns.filter(column => columnVisibilityModel[column.field] !== false);
+        const columnHeaders = visibleColumns.map(column => column.headerName);
+
+        // Фильтруем строки по id из expandedRowIds
+        const filteredRows = rows
+            .filter(row => expandedRowIds.includes(row.id)) // Оставляем только развернутые строки
+            .sort((a, b) => expandedRowIds.indexOf(a.id) - expandedRowIds.indexOf(b.id)); // Сортируем по порядку из expandedRowIds
+
+        // Формируем строки данных только с видимыми колонками для отфильтрованных строк
+        const formattedRows = filteredRows.map(row => {
+            const formattedRow = {};
+            visibleColumns.forEach(column => {
+                formattedRow[column.headerName] = row[column.field];
+            });
+            return formattedRow;
+        });
+
+        // Преобразуем данные в формат Excel
+        const worksheet = XLSX.utils.json_to_sheet(formattedRows, { header: columnHeaders });
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
+
+        // Сохраняем Excel
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+        saveAs(blob, 'data.xlsx');
+    };
+
+
     return (
         <div>
             <div>
                 <Paper style={{ height: '100%', width: '100%', margin: '20px 0' }}>
                     <Box sx={{ height: 'calc(115vh - 200px)', width: '100%', overflow: 'auto' }}>
-                        <DataGrid
+                        {/* Кнопка для экспорта */}
+                        <button
+                            onClick={exportToExcel}
+                            style={{
+                                padding: '5px 10px',
+                                fontSize: '14px',
+                                fontWeight: 'bold',
+                                color: '#fff',
+                                background: 'linear-gradient(45deg, #4CAF50, #8BC34A)',
+                                border: 'none',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+                                marginBottom: '10px',
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'linear-gradient(45deg, #66BB6A, #AED581)';
+                                e.currentTarget.style.boxShadow = '0px 6px 8px rgba(0, 0, 0, 0.2)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'linear-gradient(45deg, #4CAF50, #8BC34A)';
+                                e.currentTarget.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
+                            }}
+                            onMouseDown={(e) => {
+                                e.currentTarget.style.transform = 'scale(0.95)';
+                            }}
+                            onMouseUp={(e) => {
+                                e.currentTarget.style.transform = 'scale(1)';
+                            }}
+                        >
+                            Экспорт в Excel
+                        </button>
+                        <DataGridPro
                             rows={rows}
                             columns={columns}
-
+                            apiRef={apiRef}
+                            
                             localeText={ruRU.components.MuiDataGrid.defaultProps.localeText}
                             getRowClassName={getRowClassName}
                             onProcessRowUpdateError={(error) => console.error('Ошибка при обновлении строки:', error)}
                             onColumnWidthChange={handleColumnResize}
+                            onColumnVisibilityModelChange={(newModel) => setColumnVisibilityModel(newModel)}
+
                             sx={{
+                                '& .MuiDataGrid-license': {
+                                    display: 'none !important', // Скрытие лицензии
+                                },
+                                '& .MuiDataGrid-watermark': {
+                                    display: 'none !important', // Скрытие водяного знака
+                                },
                                 '& .super-app-theme--header': {
-                                    backgroundColor: '#bceaff',
+                                    backgroundColor: '#a43434',
                                     fontWeight: 'bold',
                                     // color: '#333',
                                     border: '1px solid #ccc',

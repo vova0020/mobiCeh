@@ -2,10 +2,13 @@
 
 /* eslint-disable */
 import { Box, Paper } from '@mui/material'
-import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import { ruRU } from '@mui/x-data-grid/locales/ruRU';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react'
+import { DataGrid, GridColDef, gridExpandedSortedRowIdsSelector } from '@mui/x-data-grid'
+import { DataGridPro, GridToolbar } from '@mui/x-data-grid-pro';
+import * as XLSX from 'xlsx';
+import { useGridApiRef } from '@mui/x-data-grid';
 
 
 interface WorkDone {
@@ -62,6 +65,9 @@ interface OrderRow {
 }
 
 export default function StatistikTable2() {
+
+    const apiRef = useGridApiRef();
+    const [columnVisibilityModel, setColumnVisibilityModel] = useState({});
 
     const [rows, setRows] = useState<OrderRow[]>([]);
     const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number; value: number | null; quantity: number | null } | null>(null);
@@ -140,7 +146,7 @@ export default function StatistikTable2() {
         { field: 'launchNumber', headerName: '№ запуска', editable: true, width: columnState['launchNumber'] || 70, filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
         { field: 'orderName', headerName: 'Заказ', editable: true, width: columnState['orderName'] || 130, filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
         { field: 'nomenclature', headerName: 'Номенклатура', editable: true, width: columnState['nomenclature'] || 130, filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
-        { field: 'article', headerName: 'Артикул', editable: true, width: columnState['article'] || 100,filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
+        { field: 'article', headerName: 'Артикул', editable: true, width: columnState['article'] || 100, filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
         { field: 'quantity', headerName: 'Количество', editable: false, width: columnState['quantity'] || 130, type: 'number', filterable: true, headerAlign: 'center', headerClassName: 'super-app-theme--header' },
         { field: 'pdDate', headerName: 'ПД', editable: false, width: columnState['pdDate'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         { field: 'status', headerName: 'Статус', editable: true, width: columnState['status'] || 90, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
@@ -148,7 +154,7 @@ export default function StatistikTable2() {
         { field: 'completionRate', headerName: '% Выполнения', editable: true, type: 'number', width: columnState['completionRate'] || 130, headerClassName: 'super-app-theme--header', headerAlign: 'center', },
         {
             field: 'raskroiStat', headerName: 'Раскрой', width: columnState['raskroiStat'] || 130, editable: false, type: 'string', headerClassName: 'super-app-theme--header', headerAlign: 'center', renderCell: (params) => (
-                <div onContextMenu={(event) => handleContextMenu(event, params.row.raskroiCompl, params.row.quantity, params.row.workDone, )}>
+                <div onContextMenu={(event) => handleContextMenu(event, params.row.raskroiCompl, params.row.quantity, params.row.workDone,)}>
                     {params.value}
                     {params.quantity}
                 </div>
@@ -446,12 +452,84 @@ export default function StatistikTable2() {
             [params.colDef.field]: params.width,
         }));
     };
+
+    const exportToExcel = () => {
+        // Проверка на существование apiRef и его current
+        if (!apiRef.current) {
+            console.error('apiRef is not initialized');
+            return;
+        }
+
+        // Получаем идентификаторы развернутых строк
+        const expandedRowIds = gridExpandedSortedRowIdsSelector(apiRef);
+
+        // Получаем видимые колонки
+        const visibleColumns = columns.filter(column => columnVisibilityModel[column.field] !== false);
+        const columnHeaders = visibleColumns.map(column => column.headerName);
+
+        // Фильтруем строки по id из expandedRowIds
+        const filteredRows = rows
+            .filter(row => expandedRowIds.includes(row.id)) // Оставляем только развернутые строки
+            .sort((a, b) => expandedRowIds.indexOf(a.id) - expandedRowIds.indexOf(b.id)); // Сортируем по порядку из expandedRowIds
+
+        // Формируем строки данных только с видимыми колонками для отфильтрованных строк
+        const formattedRows = filteredRows.map(row => {
+            const formattedRow = {};
+            visibleColumns.forEach(column => {
+                formattedRow[column.headerName] = row[column.field];
+            });
+            return formattedRow;
+        });
+
+        // Преобразуем данные в формат Excel
+        const worksheet = XLSX.utils.json_to_sheet(formattedRows, { header: columnHeaders });
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
+
+        // Сохраняем Excel
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+        saveAs(blob, 'data.xlsx');
+    };
     return (
         <div>
             <div>
                 <Paper style={{ height: '100%', width: '100%', margin: '20px 0' }}>
                     <Box sx={{ height: 'calc(115vh - 200px)', width: '100%', overflow: 'auto' }}>
-                        <DataGrid
+                        {/* Кнопка для экспорта */}
+                        <button
+                            onClick={exportToExcel}
+                            style={{
+                                padding: '5px 10px',
+                                fontSize: '14px',
+                                fontWeight: 'bold',
+                                color: '#fff',
+                                background: 'linear-gradient(45deg, #4CAF50, #8BC34A)',
+                                border: 'none',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+                                marginBottom: '10px',
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'linear-gradient(45deg, #66BB6A, #AED581)';
+                                e.currentTarget.style.boxShadow = '0px 6px 8px rgba(0, 0, 0, 0.2)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'linear-gradient(45deg, #4CAF50, #8BC34A)';
+                                e.currentTarget.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
+                            }}
+                            onMouseDown={(e) => {
+                                e.currentTarget.style.transform = 'scale(0.95)';
+                            }}
+                            onMouseUp={(e) => {
+                                e.currentTarget.style.transform = 'scale(1)';
+                            }}
+                        >
+                            Экспорт в Excel
+                        </button>
+                        <DataGridPro
                             rows={rows}
                             columns={columns}
 
@@ -459,6 +537,11 @@ export default function StatistikTable2() {
                             getRowClassName={getRowClassName}
                             onProcessRowUpdateError={(error) => console.error('Ошибка при обновлении строки:', error)}
                             onColumnWidthChange={handleColumnResize}
+                            apiRef={apiRef}
+                            columnVisibilityModel={columnVisibilityModel}
+                            onColumnVisibilityModelChange={(newModel) =>
+                                setColumnVisibilityModel(newModel)
+                            }
                             sx={{
                                 '& .super-app-theme--header': {
                                     backgroundColor: '#bceaff',
@@ -493,7 +576,7 @@ export default function StatistikTable2() {
                     </Box>
                 </Paper>
                 {renderContextMenu()}
-              
+
             </div>
         </div>
     )

@@ -59,10 +59,13 @@ export default class prismaInteraction {
                             pdDateRaskroi: orders.pdDateRaskroi,
                             pdDateNesting: orders.pdDateNesting,
                         },
+                        
                     });
+                    
                 } else {
                     throw new Error('Заказ не найден');
                 }
+              
 
                 const workStatus = await prisma.orderWorkstationStatus.findFirst({
                     where: {
@@ -76,28 +79,28 @@ export default class prismaInteraction {
                     await prisma.orderWorkstationStatus.update({
                         where: { id: workStatus.id },
                         data: {
-                            raskroi: false,
-                            nesting: false,
-                            zerkala: false,
-                            kromka: false,
-                            prisadka: false,
-                            pokraska: false,
-                            furnitura: false,
-                            setki: false,
-                            guides: false,
-                            metal: false,
-                            konveer: false,
-                            sborka: false,
-                            provolka: false,
-                            xba: false,
-                            moika: false,
-                            galivanika: false,
-                            termoplast: false,
-                            ypakovka: false,
+                            raskroi: workStatuses.raskroi,
+                            nesting: workStatuses.nesting,
+                            zerkala: workStatuses.zerkala,
+                            kromka: workStatuses.kromka,
+                            prisadka: workStatuses.prisadka,
+                            pokraska: workStatuses.pokraska,
+                            furnitura: workStatuses.furnitura,
+                            setki: workStatuses.setki,
+                            guides: workStatuses.guides,
+                            metal: workStatuses.metal,
+                            konveer: workStatuses.konveer,
+                            sborka: workStatuses.sborka,
+                            provolka: workStatuses.provolka,
+                            xba: workStatuses.xba,
+                            moika: workStatuses.moika,
+                            galivanika: workStatuses.galivanika,
+                            termoplast: workStatuses.termoplast,
+                            ypakovka: workStatuses.ypakovka,
                         },
                     });
 
-                    this.croneTable2(id);
+                    
 
                 } else {
                     throw new Error('Заказ не найден');
@@ -110,6 +113,7 @@ export default class prismaInteraction {
                     });
 
                     console.log(`Удалено записей: ${deletedTasks.count}`);
+                    this.croneTable2(id);
                 } catch (error) {
                     console.error('Ошибка при удалении записей:', error);
                 }
@@ -253,8 +257,10 @@ export default class prismaInteraction {
                     },
                 });
 
-                if (isActive) {
-                    if (!existingTask) {
+                if (isActive && orders.status !== 'Отложено') {
+                    if (!existingTask ) {
+                        console.log('Сработал');
+                        
                         // Если участок активен, но задания нет, создаем его
                         tasks.push({
                             orderId: id,
@@ -1175,78 +1181,78 @@ export default class prismaInteraction {
     }
 
     // Запросы для админки =================================
-    async getAdminOrders() {
-        try {
-            const orders = await prisma.order.findMany({
-                include: {
-                    workStatuses: true,  // Включаем связь со статусами участков
-                    tasks: { // Правильный синтаксис для include
-                        include: { // Используйте include для вложенного включения
-                            workstation: true,
-                            workDone: true,
-                            workDonePokraska: true
-                        }
-                    }
-                }
-            });
+    // async getAdminOrders() {
+    //     try {
+    //         const orders = await prisma.order.findMany({
+    //             include: {
+    //                 workStatuses: true,  // Включаем связь со статусами участков
+    //                 tasks: { // Правильный синтаксис для include
+    //                     include: { // Используйте include для вложенного включения
+    //                         workstation: true,
+    //                         workDone: true,
+    //                         workDonePokraska: true
+    //                     }
+    //                 }
+    //             }
+    //         });
 
-            // Логика для обновления статусов заказа, вычисления completionRate и isCompleted
-            for (const order of orders) {
-                if (order.tasks.length > 0) {
-                    let totalCompletedPros = 0;
-                    let hasWorkInProgress = false;
+    //         // Логика для обновления статусов заказа, вычисления completionRate и isCompleted
+    //         for (const order of orders) {
+    //             if (order.tasks.length > 0) {
+    //                 let totalCompletedPros = 0;
+    //                 let hasWorkInProgress = false;
 
-                    // Считаем общую сумму прогресса
-                    order.tasks.forEach(task => {
-                        const completedPros = task.completedPros || 0;
-                        totalCompletedPros += completedPros;
+    //                 // Считаем общую сумму прогресса
+    //                 order.tasks.forEach(task => {
+    //                     const completedPros = task.completedPros || 0;
+    //                     totalCompletedPros += completedPros;
 
-                        // Если хотя бы одно задание имеет прогресс > 0, то статус "В работе"
-                        if (completedPros > 0) {
-                            hasWorkInProgress = true;
-                        }
-                    });
+    //                     // Если хотя бы одно задание имеет прогресс > 0, то статус "В работе"
+    //                     if (completedPros > 0) {
+    //                         hasWorkInProgress = true;
+    //                     }
+    //                 });
 
-                    const averageCompletedPros = totalCompletedPros / order.tasks.length;
+    //                 const averageCompletedPros = totalCompletedPros / order.tasks.length;
 
-                    // Определяем статус заказа
-                    if (averageCompletedPros > 99) {
-                        order.status = "Завершен";
-                    } else if (hasWorkInProgress) {
-                        order.status = "В работе";
-                    } else {
-                        order.status = "Ожидание";
-                    }
+    //                 // Определяем статус заказа
+    //                 if (averageCompletedPros > 99) {
+    //                     order.status = "Завершен";
+    //                 } else if (hasWorkInProgress) {
+    //                     order.status = "В работе";
+    //                 } else {
+    //                     order.status = "Ожидание";
+    //                 }
 
-                    // Рассчитываем completionRate как среднее значение completedPros по всем участкам
-                    order.completionRate = averageCompletedPros;
+    //                 // Рассчитываем completionRate как среднее значение completedPros по всем участкам
+    //                 order.completionRate = averageCompletedPros;
 
-                    // Устанавливаем isCompleted в true, если completionRate > 99
-                    order.isCompleted = order.completionRate > 99;
-                } else {
-                    order.status = "Ожидание";  // Если нет заданий, то статус "Ожидание"
-                    order.completionRate = 0;   // Если нет заданий, то completionRate = 0
-                    order.isCompleted = false;  // Если нет заданий, то заказ не завершен
-                }
+    //                 // Устанавливаем isCompleted в true, если completionRate > 99
+    //                 order.isCompleted = order.completionRate > 99;
+    //             } else {
+    //                 order.status = "Ожидание";  // Если нет заданий, то статус "Ожидание"
+    //                 order.completionRate = 0;   // Если нет заданий, то completionRate = 0
+    //                 order.isCompleted = false;  // Если нет заданий, то заказ не завершен
+    //             }
 
-                // Сохранение обновленных данных в базу
-                await prisma.order.update({
-                    where: { id: order.id },
-                    data: {
-                        status: order.status,
-                        completionRate: order.completionRate,
-                        isCompleted: order.isCompleted
-                    }
-                });
-            }
+    //             // Сохранение обновленных данных в базу
+    //             await prisma.order.update({
+    //                 where: { id: order.id },
+    //                 data: {
+    //                     status: order.status,
+    //                     completionRate: order.completionRate,
+    //                     isCompleted: order.isCompleted
+    //                 }
+    //             });
+    //         }
 
-            return orders;
-        } catch (error) {
-            console.error('Ошибка при получении данных:', error);
-        } finally {
-            await prisma.$disconnect();
-        }
-    }
+    //         return orders;
+    //     } catch (error) {
+    //         console.error('Ошибка при получении данных:', error);
+    //     } finally {
+    //         await prisma.$disconnect();
+    //     }
+    // }
 
 
 
@@ -1454,8 +1460,6 @@ export default class prismaInteraction {
                         orders.status = "Ожидание";
                     }
                 }
-
-
                 // Рассчитываем completionRate как среднее значение completedPros по всем участкам
                 orders.completionRate = averageCompletedPros;
 
