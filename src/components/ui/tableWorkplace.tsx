@@ -347,7 +347,7 @@ export default function TableWorkplace({ workData }: { workData: string }) {
                         }
                         sx={{
                             '& .super-app-theme--header': {
-                                backgroundColor: '#bceaff',
+                                backgroundColor: '#a43434',
                                 fontWeight: 'bold',
                                 // color: '#333',
                                 border: '1px solid #ccc',
