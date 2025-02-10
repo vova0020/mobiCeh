@@ -248,28 +248,18 @@ export default function TablePokraska({ workData }: { workData: string }) {
     try {
       const { id, shlif1Fakt, grunt1Fakt, shlif2Fakt, grunt2Fakt, shlif3Fakt, grunt3Fakt, emalFakt } = newRow;
       const ostatokInpt = newRow.tasks[0].ostatokInpt;
-      console.log(newRow);
-      console.log(oldRow);
-
-      const columnsWithValues = [
-        { name: 'Шлифовка 1 факт', value: shlif1Fakt },
-        { name: 'Грунт 1 факт', value: grunt1Fakt },
-        { name: 'Шлифовка 2 факт', value: shlif2Fakt },
-        { name: 'Грунт 2 факт', value: grunt2Fakt },
-        { name: 'Шлифовка 3 факт', value: shlif3Fakt },
-        { name: 'Грунт 3 факт', value: grunt3Fakt },
-        { name: 'Эмаль факт', value: emalFakt },
-      ];
-
-      for (const { name, value } of columnsWithValues) {
-        console.log(value);
-        if (value > ostatokInpt) {
-
-          alert(`Максимальное количество для выполнения в колонке "${name}": ${ostatokInpt}. Пожалуйста, обратитесь к менеджеру.`);
-          throw new Error(`Превышение допустимого значения для "${name}". Максимум для сегодняшнего дня: ${ostatokInpt}`);
-        }
+  
+      // Проверка только для столбца emalFakt
+      if (emalFakt > ostatokInpt) {
+        alert(
+          `Максимальное количество для выполнения в колонке "Эмаль факт": ${ostatokInpt}. Пожалуйста, обратитесь к менеджеру.`
+        );
+        throw new Error(
+          `Превышение допустимого значения для "Эмаль факт". Максимум для сегодняшнего дня: ${ostatokInpt}`
+        );
       }
-
+  
+      // Выполняем запрос в базу
       await axios.post('/api/pokraska', {
         orderId: id,
         workstationName: workData,
@@ -283,15 +273,17 @@ export default function TablePokraska({ workData }: { workData: string }) {
           emalFakt,
         },
       });
-
+  
+      // Обновляем данные
       fetchData();
-
+  
       return newRow;
     } catch (error) {
       console.error('Ошибка при обновлении данных:', error);
       throw new Error('Ошибка при обновлении данных');
     }
   };
+  
 
   const getCurrentDate2 = (): string => {
     const today = new Date();
